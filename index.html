@@ -243,6 +243,8 @@ details.more[open] summary{margin-bottom:12px}
 .months>div{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2);text-align:center}
 .pay{width:100%;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font:inherit;color:var(--ink2);cursor:pointer}
 .pay:hover{background:var(--hover)}
+.pay.part{height:auto;min-height:28px;padding:3px 0;line-height:16px}
+.pay small{display:block;font-size:11px;font-weight:500;opacity:.85}
 .pay.paid{background:var(--pos-tint);border-color:var(--pos-line);color:var(--pos);font-weight:500}
 .pay.due{background:var(--neg-tint);border-color:var(--neg-line);color:var(--neg);font-weight:500}
 .pay:disabled{cursor:default;background:var(--raised);color:#b0b0b0}
@@ -380,7 +382,10 @@ function waNumber(phone){
 }
 const waLink = (phone, text='') => `https:\/\/wa.me/${waNumber(phone)}${text?'?text='+encodeURIComponent(text):''}`;
 function fillTpl(key, c, extra={}){
-  const vars = {name:(c.name||'').split(' ')[0], space:db.settings.spaceName||'our space', amount:money(c.rent), month:monthLabel(monthKey(),true),
+  // Rent reminders quote what is actually owed: all unpaid months, or this month's (possibly part-month) amount.
+  const owed = c.rent ? arrears(c) : [], mk = monthKey();
+  const months = owed.map(m => monthLabel(m, true)), monthText = months.length > 1 ? months.slice(0,-1).join(', ') + ' and ' + months[months.length-1] : (months[0] || monthLabel(mk, true));
+  const vars = {name:(c.name||'').split(' ')[0], space:db.settings.spaceName||'our space', amount:money(owed.length ? owedTotal(c) : (rentFor(c, mk) || c.rent)), month:monthText,
     docs:(c.docs||[]).filter(d=>!d.collected).map(d=>d.name).join(', '), date:fmtD(c.endDate), plan:(c.plan||'workspace').toLowerCase(), ...extra};
   return (db.settings.templates[key]||'').replace(/\{(\w+)\}/g,(m,k)=>vars[k]??m);
 }
@@ -621,20 +626,42 @@ function setStatus(c, s){
   return closed;
 }
 const openFus = id => db.followups.filter(f => f.clientId===id && !f.done).sort((a,b)=>a.due<b.due?-1:1);
+// ===================== rent rules =====================
+// Rent starts in the month the client joins (their start date). The joining month is charged by days,
+// counting the joining day: joining on Nov 28 pays for 28, 29 and 30 = 3/30 of the monthly rent, due that day.
+// Every later month is the full rent (the last month too), due on the client's due day.
+const daysIn = mk => { const [y,m] = mk.split('-').map(Number); return new Date(y,m,0).getDate(); };
+const joinDate = c => c.startDate || c.createdAt || '';
+// Months worth tracking: from joining, but never before the client was added here (older months weren't tracked in SpaceDesk).
+function billFrom(c){
+  const j = joinDate(c).slice(0,7), added = (c.createdAt || '').slice(0,7);
+  return j && added && added > j ? added : j;
+}
+// Days charged in month mk: all of them, or fewer in the joining month.
+function billedDays(c, mk){
+  const j = joinDate(c);
+  return j && j.slice(0,7) === mk ? daysIn(mk) - Number(j.slice(8,10)) + 1 : daysIn(mk);
+}
+function rentFor(c, mk){
+  const r = Number(c.rent);
+  if(!r || !billFrom(c) || mk < billFrom(c)) return 0;
+  return Math.round(r * billedDays(c, mk) / daysIn(mk));
+}
+const isPartial = (c, mk) => rentFor(c, mk) > 0 && billedDays(c, mk) < daysIn(mk);
+function rentDueDate(c, mk){
+  const j = joinDate(c);
+  if(j && j.slice(0,7) === mk) return j.slice(0,10);
+  return `${mk}-${pad(Math.min(Number(c.rentDueDay||1), daysIn(mk)))}`;
+}
 function rentState(c, mk=monthKey()){
-  if(!Number(c.rent) || !CURRENT.includes(c.status)) return null;
+  if(!CURRENT.includes(c.status) || !rentFor(c, mk) || mk > monthKey()) return null;
   if(c.payments[mk]) return 'paid';
-  if(c.startDate && c.startDate.slice(0,7) > mk) return null;
-  const [y,m] = mk.split('-').map(Number), last = new Date(y,m,0).getDate();
-  const dueDay = Math.min(Number(c.rentDueDay||1), last);
-  if(mk < monthKey()) return 'overdue';
-  return new Date().getDate() >= dueDay ? 'overdue' : 'upcoming';
+  return today() >= rentDueDate(c, mk) ? 'overdue' : 'upcoming';
 }
-// Unpaid months we can trust: only since the client was added to SpaceDesk (older months were never tracked here).
-function arrears(c){
-  const from = (c.createdAt || today()).slice(0,7);
-  return last6().filter(m => m >= from && rentState(c, m) === 'overdue');
-}
+const arrears = c => last6().filter(m => rentState(c, m) === 'overdue');
+const owedTotal = c => arrears(c).reduce((s, m) => s + rentFor(c, m), 0);
+// "₹3,000 for 3 of 30 days" for the joining month, plain amount otherwise.
+const rentLabel = (c, mk) => isPartial(c, mk) ? `${money(rentFor(c, mk))} for ${billedDays(c, mk)} of ${daysIn(mk)} days` : money(rentFor(c, mk));
 
 function reminders(){
   const out = [];
@@ -670,8 +697,8 @@ function attention(){
       const owed = arrears(c);
       if(owed.length)
         a.push({c, sev:'neg', label:'Rent due', text: owed.length > 1
-            ? `${money(c.rent*owed.length)} unpaid for ${owed.length} months, since ${monthLabel(owed[0],true)}`
-            : `${money(c.rent)} for ${monthLabel(owed[0],true)} not received`,
+            ? `${money(owedTotal(c))} unpaid for ${owed.length} months, since ${monthLabel(owed[0],true)}`
+            : `${rentLabel(c, owed[0])} for ${monthLabel(owed[0],true)} not received`,
           acts:[[`Mark ${monthLabel(owed[0])} paid`,`data-act="pay" data-id="${c.id}" data-m="${owed[0]}"`], c.phone&&['Send reminder',`data-act="wa" data-id="${c.id}" data-tpl="rent"`]]});
       const pend = c.docs.filter(d=>!d.collected).length;
       if(pend) a.push({c, sev:'warn', label:'Documents', text:`${plural(pend,'document')} still to collect`,
@@ -924,7 +951,8 @@ function viewToday(){
   const act = db.clients.filter(c => CURRENT.includes(c.status));
   const leads = db.clients.filter(c => PIPELINE.includes(c.status));
   const seats = act.reduce((s,c)=>s+Number(c.seats||0),0), total = Number(db.settings.totalSeats||0);
-  const rentDue = act.filter(c=>Number(c.rent)), rentTotal = rentDue.reduce((s,c)=>s+Number(c.rent),0), rentIn = rentDue.filter(c=>c.payments[monthKey()]).reduce((s,c)=>s+Number(c.rent),0);
+  const mkNow = monthKey(), rentDue = act.filter(c => rentFor(c, mkNow));
+  const rentTotal = rentDue.reduce((s,c) => s + rentFor(c, mkNow), 0), rentIn = rentDue.filter(c => c.payments[mkNow]).reduce((s,c) => s + rentFor(c, mkNow), 0);
   const att = attention();
   const summary = todayList.length ? `${plural(todayList.length,'thing')} to do${overdue?`, ${overdue} overdue`:''}` : 'Nothing scheduled';
   const pct = (a,b) => b ? Math.min(100, a/b*100) : 0;
@@ -1010,7 +1038,7 @@ function viewClients(){
           <td class="num">${Number(c.rent)?money(c.rent):'<span class="dash">—</span>'}</td>
           <td>${c.endDate?`${fmtD(c.endDate)}<div class="s ${d!==null&&d<=30?'late':''}">${relDays(c.endDate)}</div>`:'<span class="dash">—</span>'}</td>
           <td>${c.docs.length?(dn===c.docs.length?'<span class="pill pos">Complete</span>':`<span class="pill warn">${dn} of ${c.docs.length}</span>`):'<span class="dash">—</span>'}</td>
-          <td>${rs==='paid'?'<span class="pill pos">Paid</span>':rs==='overdue'?'<span class="pill neg">Due</span>':rs==='upcoming'?`<span class="s">Due ${ordinal(Number(c.rentDueDay||1))}</span>`:'<span class="dash">—</span>'}</td></tr>`; }).join('')
+          <td>${rs==='paid'?'<span class="pill pos">Paid</span>':rs==='overdue'?'<span class="pill neg">Due</span>':rs==='upcoming'?`<span class="s">Due ${fmtD(rentDueDate(c, monthKey()))}</span>`:'<span class="dash">—</span>'}</td></tr>`; }).join('')
         || `<tr><td colspan="7"><div class="empty">${ui.q?'No clients match your search.':tab==='Active'?'No active clients yet. When a lead joins, change their status to Active, or use “Add client”.':'Nobody here.'}</div></td></tr>`}</tbody>
     </table></div>
   </section>`;
@@ -1055,14 +1083,15 @@ function docList(c){
 function last6(offset=5){ return [...Array(6)].map((_,i)=>{ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-offset+i); return monthKey(d); }); }
 // One rent toggle used on both the Rent page and the client page.
 function payButton(c, m){
-  const off = (c.startDate && c.startDate.slice(0,7) > m) || m > monthKey(), paid = !!c.payments[m];
-  const due = !paid && !off && arrears(c).includes(m);
-  return `<button class="pay ${paid?'paid':due?'due':''}" data-act="pay" data-id="${c.id}" data-m="${m}" ${off?'disabled':''} aria-pressed="${paid}" aria-label="${esc(c.name)}, ${monthLabel(m,true)}: ${paid?'paid':off?'not applicable':due?'overdue':'unpaid'}">${paid?'Paid':off?'—':due?'Due':'Unpaid'}</button>`;
+  const off = !rentFor(c, m) || m > monthKey(), paid = !!c.payments[m];
+  const due = !paid && !off && rentState(c, m) === 'overdue';
+  const part = !off && isPartial(c, m) ? `<small>${money(rentFor(c, m))}</small>` : '';   // joining month: show the part-month amount
+  return `<button class="pay ${paid?'paid':due?'due':''}${part?' part':''}" data-act="pay" data-id="${c.id}" data-m="${m}" ${off?'disabled':''} aria-pressed="${paid}" title="${off?'Not a member yet':esc(rentLabel(c, m))}" aria-label="${esc(c.name)}, ${monthLabel(m,true)}: ${paid?'paid':off?'not a member yet':due?'overdue':'unpaid'}${off?'':', '+esc(rentLabel(c, m))}">${paid?'Paid':off?'—':due?'Due':'Unpaid'}${part}</button>`;
 }
 function viewRent(){
   const months = last6(), act = db.clients.filter(c => CURRENT.includes(c.status) && Number(c.rent)).sort((a,b)=>a.name.localeCompare(b.name));
-  const mk = monthKey(), total = act.reduce((s,c)=>s+Number(c.rent),0), got = act.filter(c=>c.payments[mk]).reduce((s,c)=>s+Number(c.rent),0);
-  return `<div class="ph"><div><h1>Rent</h1><div class="sub">${act.length ? `${money(got)} of ${money(total)} received for ${monthLabel(mk,true)}. Click a month to mark it paid; red months are overdue.` : 'Clients with a monthly rent appear here.'}</div></div></div>
+  const mk = monthKey(), total = act.reduce((s,c)=>s+rentFor(c, mk),0), got = act.filter(c=>c.payments[mk]).reduce((s,c)=>s+rentFor(c, mk),0);
+  return `<div class="ph"><div><h1>Rent</h1><div class="sub">${act.length ? `${money(got)} of ${money(total)} received for ${monthLabel(mk,true)}. Click a month to mark it paid; red months are overdue. Rent starts in the joining month, charged only for the days from joining.` : 'Clients with a monthly rent appear here.'}</div></div></div>
   <section class="panel"><div class="tablewrap"><table>
     <thead><tr><th>Client</th><th class="num">Rent</th><th>Due</th>${months.map(m=>`<th style="text-align:center">${monthLabel(m)}</th>`).join('')}</tr></thead>
     <tbody>${act.map(c=>`<tr><td><a class="name" href="#/client/${c.id}">${esc(c.name)}</a></td><td class="num">${money(c.rent)}</td><td>${ordinal(Number(c.rentDueDay||1))}</td>
@@ -1141,9 +1170,9 @@ function clientFields(c, isNew){
     <div class="fsec" data-show="member">Agreement and rent</div>
     ${fld('Seat or cabin number','seatNo',c.seatNo,'text','','member')}
     ${fld(`Monthly rent (${esc(s.currency)})`,'rent',c.rent,'number','min="0"','member')}
-    ${fld('Rent due on day','rentDueDay',c.rentDueDay||(isNew?5:''),'number','min="1" max="31"','member')}
+    ${fld('Rent due on day','rentDueDay',c.rentDueDay||(isNew?1:''),'number','min="1" max="31"','member')}
     ${fld(`Security deposit (${esc(s.currency)})`,'deposit',c.deposit,'number','min="0"','member')}
-    ${fld('Start date','startDate',c.startDate,'date','','member')}
+    <label data-show="member">Joining date<input name="startDate" type="date" value="${esc(c.startDate??'')}"><span class="hint">Rent starts this month, charged only from this day.</span></label>
     ${fld('Agreement ends','endDate',c.endDate,'date','','member')}
     <label class="check wide" data-show="left"><input type="checkbox" name="depositRefunded" ${c.depositRefunded?'checked':''}> Security deposit refunded</label>
     <div class="fsec">Other</div>
@@ -1203,8 +1232,9 @@ function clientSummary(c){
     sec('Status and plan', [['Status', statusPill(c.status)], ['Found you via', esc(c.source||'')], ['Plan', esc(c.plan||'')], ['Seats', esc(c.seats||'')],
       ['Requirement', !member ? esc(c.requirement||'') : ''], ['Why they did not join', c.status==='Lost' ? esc(c.lostReason||'Not recorded') : '']]),
     member ? sec('Agreement and rent', [['Seat or cabin', esc(c.seatNo||'')], ['Monthly rent', Number(c.rent) ? `${money(c.rent)}, due on the ${ordinal(Number(c.rentDueDay||1))}` : ''],
+      ['First month', Number(c.rent) && c.startDate && isPartial(c, c.startDate.slice(0,7)) ? `${rentLabel(c, c.startDate.slice(0,7))} in ${monthLabel(c.startDate.slice(0,7), true)}, due ${fmtD(c.startDate)}` : ''],
       ['Security deposit', Number(c.deposit) ? money(c.deposit) + (c.status==='Left' ? (c.depositRefunded ? ' · refunded' : ' · not refunded yet') : '') : ''],
-      ['Started', fmtD(c.startDate)], ['Agreement ends', c.endDate ? `${fmtD(c.endDate)} <span class="hint">${relDays(c.endDate)}</span>` : '']]) : '',
+      ['Joined', fmtD(c.startDate)], ['Agreement ends', c.endDate ? `${fmtD(c.endDate)} <span class="hint">${relDays(c.endDate)}</span>` : '']]) : '',
     sec('Other', [['Birthday', c.birthday ? new Date(c.birthday+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'long'}) : ''], ['Notes', esc(c.notes||''), 'note']])
   ].join('');
   return `<dl class="kv">${html}</dl>`;
@@ -1218,7 +1248,7 @@ function clientSide(c){
   ${member || c.docs.length ? `<section class="panel"><div class="panel-h">${hic('file','docs')}<h2>Documents</h2><span class="meta">${dn} of ${c.docs.length}</span></div>
     <div class="panel-b" style="padding-top:12px;padding-bottom:8px">${c.docs.length?`<div class="prog" aria-hidden="true"><i data-k="docs-${c.id}" style="width:${dn/c.docs.length*100}%"></i></div>`:''}${docList(c)}
       <div style="display:flex;gap:8px;margin:10px 0 4px"><input id="newDoc" aria-label="Document name" placeholder="Add another document"><button class="btn" data-act="addDoc" data-id="${c.id}">Add</button></div></div></section>` : ''}
-  ${CURRENT.includes(c.status) && Number(c.rent) ? `<section class="panel"><div class="panel-h">${hic('wallet','rent')}<h2>Rent</h2><span class="meta">${money(c.rent)} due on the ${ordinal(Number(c.rentDueDay||1))}</span></div>
+  ${CURRENT.includes(c.status) && Number(c.rent) ? `<section class="panel"><div class="panel-h">${hic('wallet','rent')}<h2>Rent</h2><span class="meta">${isPartial(c, monthKey()) ? `${rentLabel(c, monthKey())} this month, then ${money(c.rent)} on the ${ordinal(Number(c.rentDueDay||1))}` : `${money(c.rent)} due on the ${ordinal(Number(c.rentDueDay||1))}`}</span></div>
     <div class="panel-b"><div class="months">${last6(4).map(m=>`<div>${monthLabel(m)}${payButton(c,m)}</div>`).join('')}</div></div></section>` : ''}
   <section class="panel"><div class="panel-h">${hic('clock','settings')}<h2>Activity</h2></div><div class="panel-b" style="padding-top:8px">
     <div style="display:flex;gap:8px;margin-bottom:6px"><input id="newLog" aria-label="Note" placeholder="Add a note, e.g. visited, liked cabin 3"><button class="btn" data-act="addLog" data-id="${c.id}">Add</button></div>
@@ -1441,7 +1471,7 @@ const A = {
     document.querySelector(`[data-act="doc"][data-id="${d.id}"][data-i="${d.i}"]`)?.focus({preventScroll:true}); },
   addDoc: d => { const v = $('#newDoc').value.trim(); if(!v) return; client(d.id).docs.push({name:v, collected:false, date:''}); save(); refresh(); },
   pay: d => { const c = client(d.id), was = !!c.payments[d.m];
-    undoable(`${monthLabel(d.m,true)} ${was?'marked unpaid':'marked paid'}`, `${c.name} · ${money(c.rent)}`, () => {
+    undoable(`${monthLabel(d.m,true)} ${was?'marked unpaid':'marked paid'}`, `${c.name} · ${rentLabel(c, d.m)}`, () => {
       if(was) delete c.payments[d.m]; else { c.payments[d.m] = today(); c.log.push({at:nowStr(), text:`Rent for ${monthLabel(d.m,true)} received`}); } save(); });
     refresh();
     const b = document.querySelector(`.pay[data-id="${d.id}"][data-m="${d.m}"]`); if(b){ b.classList.add('ack'); b.focus({preventScroll:true}); } },
