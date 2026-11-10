@@ -171,7 +171,9 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 .att .acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
 .att-more{padding:8px 0 10px;border-top:1px solid var(--rule)}
 .att-more .btn{color:var(--accent);font-weight:600;padding:0 8px;margin-left:-8px}
-.cnt{margin-left:auto;min-width:24px;height:22px;padding:0 8px;border-radius:11px;background:var(--neg-tint);color:var(--neg);font-size:12px;font-weight:600;line-height:22px;text-align:center}
+.panel-h:has(.cnt){flex-wrap:nowrap}
+.panel-h:has(.cnt) h2{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cnt{flex:none;margin-left:auto;min-width:24px;height:22px;padding:0 8px;border-radius:11px;background:var(--neg-tint);color:var(--neg);font-size:12px;font-weight:600;line-height:22px;text-align:center}
 /* row actions: quiet icons, one clear "Done" */
 .r-acts .btn.icon.ghost{color:var(--ink2)}
 .r-acts .btn.icon.ghost:hover{background:var(--hover);color:var(--ink)}
