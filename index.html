@@ -5,6 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SpaceDesk</title>
 <!--SYNC-CONFIG-->
+<meta name="theme-color" content="#0d3b3a">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<script>
+// Installable on phones (home-screen icon, opens full screen). Skipped for the PC's local file, where browsers can't read a manifest.
+if(location.protocol === 'https:'){ const l = document.createElement('link'); l.rel = 'manifest'; l.href = 'manifest.webmanifest'; document.head.appendChild(l); }
+</script>
 <style>
 :root{
   --ground:#f3f6f5;--surface:#fff;--raised:#f6f9f8;--active:#e4ecea;--border:#dfe7e5;--rule:#edf2f1;--control:#cdd8d6;
@@ -162,6 +169,14 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 .att-i{display:flex;gap:8px;align-items:flex-start;margin-top:8px}
 .att-i .t{flex:1;min-width:0;font-size:12px;color:var(--ink2);line-height:20px}
 .att .acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+.att-more{padding:8px 0 10px;border-top:1px solid var(--rule)}
+.att-more .btn{color:var(--accent);font-weight:600;padding:0 8px;margin-left:-8px}
+.cnt{margin-left:auto;min-width:24px;height:22px;padding:0 8px;border-radius:11px;background:var(--neg-tint);color:var(--neg);font-size:12px;font-weight:600;line-height:22px;text-align:center}
+/* row actions: quiet icons, one clear "Done" */
+.r-acts .btn.icon.ghost{color:var(--ink2)}
+.r-acts .btn.icon.ghost:hover{background:var(--hover);color:var(--ink)}
+.r-acts a.btn.icon.ghost[href^="tel"]:hover{color:var(--c-calls)}
+.r-acts a.btn.icon.ghost[target]:hover{color:#16a34a}
 
 /* notices */
 .notice{display:flex;gap:12px;align-items:center;background:#fff8e6;border:1px solid #f8d98a;color:#7a3f0a;border-radius:10px;padding:10px 14px;margin-bottom:12px}
@@ -223,6 +238,7 @@ details.more[open] summary{margin-bottom:12px}
 .pay.due{background:var(--neg-tint);border-color:var(--neg-line);color:var(--neg);font-weight:500}
 .pay:disabled{cursor:default;background:var(--raised);color:#b0b0b0}
 td.paycell{padding:6px 4px;min-width:72px}
+td.paycell:last-child{padding-right:20px}
 .log{padding:10px 0;border-bottom:1px solid var(--rule)}
 .log:last-child{border-bottom:0}
 .log .w{font-size:12px;color:var(--ink2)}
@@ -854,8 +870,8 @@ function agendaRow(r){
     <div class="r-main"><div class="r-title">${titleHtml}</div><div class="r-sub">${purposePill(r.purpose)}${r.sub?`<span>${esc(r.sub)}</span>`:''}</div>
       ${rem?`<button class="r-rem" data-act="remark" data-kind="${r.kind}" data-id="${r.id}" title="See or add remarks">${ic('note')}<span>${esc(rem.text)}</span><small>${rem.at.slice(0,10)===today()?fmtTime(rem.at):fmtDay(rem.at)}${rems.length>1?` · ${rems.length} remarks`:''}</small></button>`:''}</div>
     <div class="r-acts">
-      ${r.phone?`<a class="btn icon sm" href="tel:${esc(r.phone)}" title="Call ${esc(r.phone)}" aria-label="Call ${esc(r.title)}">${ic('phone')}</a><a class="btn icon sm" target="_blank" href="${waLink(r.phone)}" title="WhatsApp" aria-label="WhatsApp ${esc(r.title)}">${ic('chat')}</a>`:''}
-      <button class="btn icon sm" data-act="remark" data-kind="${r.kind}" data-id="${r.id}" title="Add a remark" aria-label="Add a remark: ${esc(r.title)}">${ic('note')}</button>
+      ${r.phone?`<a class="btn icon sm ghost" href="tel:${esc(r.phone)}" title="Call ${esc(r.phone)}" aria-label="Call ${esc(r.title)}">${ic('phone')}</a><a class="btn icon sm ghost" target="_blank" href="${waLink(r.phone)}" title="WhatsApp" aria-label="WhatsApp ${esc(r.title)}">${ic('chat')}</a>`:''}
+      <button class="btn icon sm ghost" data-act="remark" data-kind="${r.kind}" data-id="${r.id}" title="Add a remark" aria-label="Add a remark: ${esc(r.title)}">${ic('note')}</button>
       <button class="btn sm" data-act="done" data-kind="${r.kind}" data-id="${r.id}" aria-label="Done: ${esc(r.title)}">${ic('check')} Done</button>
       <button class="btn icon sm ghost" data-act="rowMenu" data-kind="${r.kind}" data-id="${r.id}" aria-label="More actions for ${esc(r.title)}" aria-haspopup="menu" aria-expanded="false">${ic('more')}</button>
     </div></div>`;
@@ -870,10 +886,13 @@ function attentionList(items){
   // one entry per person, most urgent person first
   const people = new Map();
   items.forEach(a => { if(!people.has(a.c.id)) people.set(a.c.id, []); people.get(a.c.id).push(a); });
-  return [...people.values()].map(list => `<div class="att"><a href="#/client/${list[0].c.id}">${esc(list[0].c.name)}</a>
+  // The most urgent few, so the panel stays on screen; the rest are one click away.
+  const all = [...people.values()], LIMIT = 4, shown = ui.attAll ? all : all.slice(0, LIMIT);
+  const more = all.length > LIMIT ? `<div class="att-more"><button class="btn sm ghost" data-act="attAll" aria-expanded="${!!ui.attAll}">${ui.attAll ? 'Show fewer' : `Show all ${all.length} people`}</button></div>` : '';
+  return shown.map(list => `<div class="att"><a href="#/client/${list[0].c.id}">${esc(list[0].c.name)}</a>
     ${list.map(a => { const acts = a.acts.filter(Boolean);
       return `<div class="att-i"><span class="pill ${a.sev}">${esc(a.label)}</span><div class="t">${esc(a.text)}${a.note?`<br>${esc(a.note)}`:''}
-        ${acts.length?`<div class="acts">${acts.map(([l,attrs])=>`<button class="btn sm" ${attrs}>${esc(l)}</button>`).join('')}</div>`:''}</div></div>`; }).join('')}</div>`).join('');
+        ${acts.length?`<div class="acts">${acts.map(([l,attrs])=>`<button class="btn sm" ${attrs}>${esc(l)}</button>`).join('')}</div>`:''}</div></div>`; }).join('')}</div>`).join('') + more;
 }
 
 // ===================== views =====================
@@ -910,18 +929,18 @@ function viewToday(){
         <div class="panel-b flush">${week.length ? groupRows(week.slice(0,8)) : '<div class="empty">Nothing scheduled this week.</div>'}</div></section>
     </div>
     <div>
-      <section class="panel"><div class="panel-h">${hic('alert','alert')}<h2>Needs attention</h2><span class="meta">${att.length||''}</span></div><div class="panel-b" style="padding-top:4px;padding-bottom:4px">${attentionList(att)}</div></section>
       <section class="panel"><div class="panel-h">${hic('chart','today')}<h2>${monthLabel(monthKey(),true)}</h2></div><div class="panel-b" style="padding-top:4px;padding-bottom:4px">
         <div class="stat" style="--c:var(--c-leads)"><span>Open leads</span><b>${leads.length}</b></div>
         <div class="stat wrap" style="--c:var(--c-clients)"><span>Seats occupied</span><b>${seats}${total?`<small> of ${total}</small>`:''}</b>${total?`<div class="prog" aria-hidden="true"><i data-k="seats" style="width:${pct(seats,total)}%"></i></div>`:''}</div>
         <div class="stat wrap" style="--c:var(--c-rent)"><span>Rent received</span><b>${money(rentIn)}<small> of ${money(rentTotal)}</small></b>${rentTotal?`<div class="prog" aria-hidden="true"><i data-k="rent" style="width:${pct(rentIn,rentTotal)}%"></i></div>`:''}</div>
       </div></section>
+      <section class="panel"><div class="panel-h">${hic('alert','alert')}<h2>Needs attention</h2>${att.length?`<span class="cnt">${new Set(att.map(a=>a.c.id)).size}</span>`:''}</div><div class="panel-b" style="padding-top:4px;padding-bottom:4px">${attentionList(att)}</div></section>
     </div>
   </div>`;
 }
 
 function searchMatch(c){ const q = ui.q.trim().toLowerCase(); return !q || [c.name,c.company,c.phone,c.email,c.plan,c.seatNo,c.notes].join(' ').toLowerCase().includes(q); }
-function searchBox(){ return `<input type="search" id="q" placeholder="Search name, company, phone" value="${esc(ui.q)}" aria-label="Search">`; }
+function searchBox(){ return `<input type="search" id="q" placeholder="Search" value="${esc(ui.q)}" aria-label="Search by name, company or phone" title="Search by name, company or phone">`; }
 function seg(key, opts, label){ return `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v,t])=>`<button aria-pressed="${ui[key]===v}" class="${ui[key]===v?'on':''}" data-act="seg" data-k="${key}" data-v="${esc(v)}">${esc(t)}</button>`).join('')}</div>`; }
 
 function viewLeads(){
@@ -1387,6 +1406,7 @@ const A = {
   syncOff: () => { if(!confirm('Stop syncing this computer? Your data stays here and in the Google Sheet.')) return; sync.cfg = {}; saveSyncCfg(); setSyncState('off'); render(); },
   copySyncLink: () => { const id = (sync.cfg.url.match(/\/s\/([^/]+)\/exec/) || [])[1];
     const l = `https:\/\/azariahsam.github.io/spacedesk/#key=${encodeURIComponent(sync.cfg.key)}&s=${id}`; navigator.clipboard?.writeText(l).then(() => toast({title:'Phone link copied', sub:'Open it in Chrome on your phone, then ⋮ › Add to Home screen.'}), () => prompt('Copy this link:', l)); },
+  attAll: () => { ui.attAll = !ui.attAll; render(); $('[data-act="attAll"]')?.focus({preventScroll:true}); },
   remark: d => remarkModal(d.kind, d.id),
   saveRemark: d => {
     const it = findItem(d.kind, d.id), text = $('#remText').value.trim();
