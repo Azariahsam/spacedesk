@@ -6,6 +6,9 @@
 <title>SpaceDesk</title>
 <!--SYNC-CONFIG-->
 <meta name="theme-color" content="#0d3b3a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&display=swap">
 <link rel="icon" type="image/png" href="favicon-32.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <script>
@@ -23,13 +26,16 @@ if(location.protocol === 'https:'){ const l = document.createElement('link'); l.
   --side:#0d3b3a;--side-ink:#d7ebe8;--side-dim:#93bdb8;
   /* one colour per section, used for its icon, bars and headings */
   --c-today:#0d9488;--c-leads:#7c3aed;--c-clients:#2563eb;--c-calls:#ea580c;--c-docs:#c2780a;--c-rent:#16a34a;--c-settings:#64748b;--c-alert:#dc2626;
-  --display:Bahnschrift,"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  /* type: Bricolage Grotesque for headings and figures, Instrument Sans for everything you read and scan. Offline, the Windows fonts take over. */
+  --display:"Bricolage Grotesque",Bahnschrift,"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --text:"Instrument Sans","Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;
   --ease:cubic-bezier(.16,1,.3,1);
   color-scheme:light;
 }
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-html,body{margin:0;background:var(--ground);color:var(--ink);font:14px/20px "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+html,body{margin:0;background:var(--ground);color:var(--ink);font:15px/22px var(--text);font-variant-numeric:tabular-nums;-webkit-font-smoothing:antialiased}
+h1,h2,.brand b{text-wrap:balance}
 b,strong{font-weight:600}
 ::selection{background:var(--accent-tint)}
 ::placeholder{color:var(--faint)}
@@ -47,10 +53,10 @@ svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stro
 aside{background:var(--side);color:var(--side-ink);padding:20px 12px;position:sticky;top:0;height:100vh;overflow:auto}
 aside :focus-visible{outline-color:#fff}
 .brand{display:flex;align-items:center;gap:10px;padding:0 8px 22px}
-.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#f5b841;color:#3b2a05;font:700 15px/1 var(--display);flex:none}
-.brand b{display:block;font:600 18px/22px var(--display);color:#fff;letter-spacing:.01em}
+.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#f5b841;color:#3b2a05;font:800 17px/1 var(--display);flex:none}
+.brand b{display:block;font:700 20px/24px var(--display);color:#fff;letter-spacing:-.01em}
 .brand #spaceName{display:block;font-size:12px;color:var(--side-dim)}
-.navgroup{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--side-dim);padding:0 10px;margin:22px 0 6px}
+.navgroup{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--side-dim);padding:0 10px;margin:22px 0 6px}
 .navgroup:first-of-type{margin-top:4px}
 .nav a{display:flex;align-items:center;justify-content:space-between;height:36px;margin-bottom:2px;padding:0 8px;border-radius:8px;color:var(--side-ink);text-decoration:none}
 .nav a:hover{background:rgba(255,255,255,.07);text-decoration:none}
@@ -70,7 +76,7 @@ main{padding:32px 36px 64px;min-width:0}
 
 /* page header */
 .ph{display:flex;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-.ph h1{font:600 28px/34px var(--display);letter-spacing:-.01em;margin:0}
+.ph h1{font:700 34px/40px var(--display);letter-spacing:-.025em;margin:0}
 .ph .sub{color:var(--ink2);margin-top:2px}
 .ph .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 .crumb{font-size:12px;color:var(--ink2);margin-bottom:6px;display:inline-flex;align-items:center;gap:6px}
@@ -102,7 +108,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 .panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:0;container-type:inline-size;box-shadow:0 1px 2px rgba(13,59,58,.04)}
 .panel+.panel{margin-top:16px}
 .panel-h{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
-.panel-h h2{font:600 17px/24px var(--display);margin:0}
+.panel-h h2{font:650 18px/24px var(--display);letter-spacing:-.01em;margin:0}
 .hic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;background:color-mix(in oklab,var(--c) 13%,#fff);color:var(--c)}
 .panel-h .meta{margin-left:auto;font-size:12px;color:var(--ink2)}
 .panel-b{padding:16px 20px}
@@ -115,7 +121,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 .stat:last-child{border-bottom:0}
 .stat>span{color:var(--ink2);display:flex;align-items:center;gap:8px}
 .stat>span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
-.stat b{margin-left:auto;font:600 20px/26px var(--display)}
+.stat b{margin-left:auto;font:700 24px/28px var(--display);letter-spacing:-.02em}
 .stat .prog i{background:var(--c)}
 .stat .prog{background:color-mix(in oklab,var(--c) 12%,#fff)}
 .stat b small{font-size:12px;font-weight:400;color:var(--ink2)}
@@ -148,7 +154,8 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 .remlist li:last-child{border-bottom:0}
 .remlist small{display:block;font-size:12px;color:var(--ink2)}
 @container (max-width:540px){
-  .row{grid-template-columns:64px minmax(0,1fr)}
+  .row{grid-template-columns:72px minmax(0,1fr)}
+  .r-time{font-size:14px;white-space:nowrap}
   .r-acts{grid-column:2}
 }
 .empty{color:var(--ink2);padding:16px 0}
@@ -186,7 +193,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0
 
 /* tables */
 table{width:100%;border-collapse:collapse}
-th{height:38px;text-align:left;font-size:12px;font-weight:400;color:var(--ink2);padding:0 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+th{height:38px;text-align:left;font-size:12px;font-weight:500;letter-spacing:.02em;color:var(--ink2);padding:0 12px;border-bottom:1px solid var(--border);white-space:nowrap}
 td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
 tr:last-child td{border-bottom:0}
 th:first-child,td:first-child{padding-left:20px} th:last-child,td:last-child{padding-right:20px}
@@ -248,7 +255,7 @@ td.paycell:last-child{padding-right:20px}
 /* modal, menu, toast */
 .scrim{position:fixed;inset:0;background:rgba(17,17,17,.32);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;overflow:auto;z-index:20}
 .dialog{background:var(--surface);border-radius:12px;width:100%;max-width:640px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.18)}
-.dialog h2{font:600 19px/26px var(--display);margin:0 0 4px}
+.dialog h2{font:700 22px/28px var(--display);letter-spacing:-.015em;margin:0 0 4px}
 .dialog .sub{color:var(--ink2);margin-bottom:20px}
 .menu{position:fixed;z-index:40;background:var(--surface);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.04);padding:4px;min-width:180px;transform-origin:top right}
 .menu button{display:flex;width:100%;height:32px;align-items:center;gap:8px;padding:0 10px;border:0;background:none;border-radius:6px;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
@@ -284,6 +291,7 @@ td.paycell:last-child{padding-right:20px}
   aside{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
   .nav{display:flex;gap:2px;padding-right:32px}.nav a{white-space:nowrap;margin:0;gap:6px}
   main{padding:20px 16px 48px}
+  .ph h1{font-size:28px;line-height:34px}
   .syncst{display:none}
   .form{grid-template-columns:1fr}
   .toolbar input[type=search]{width:100%}
