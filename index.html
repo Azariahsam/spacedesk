@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SpaceDesk</title>
+<!--SYNC-CONFIG-->
+<style>
+:root{
+  --ground:#f3f6f5;--surface:#fff;--raised:#f6f9f8;--active:#e4ecea;--border:#dfe7e5;--rule:#edf2f1;--control:#cdd8d6;
+  --ink:#10201f;--ink2:#566664;--faint:#677573;--accent:#0f766e;--accent-tint:#e3f4f1;--accent-ink:#134e4a;
+  --pos:#15803d;--neg:#c4242a;--primary:#0f766e;--primary-hover:#115e59;
+  --hover:#eef3f2;--field:#86948f;--accent-soft:#a7d8d1;
+  --pos-tint:#ecfaf1;--pos-line:#b4e6c6;--neg-tint:#fff3f2;--neg-line:#f5c2bf;
+  /* sidebar region */
+  --side:#0d3b3a;--side-ink:#d7ebe8;--side-dim:#93bdb8;
+  /* one colour per section, used for its icon, bars and headings */
+  --c-today:#0d9488;--c-leads:#7c3aed;--c-clients:#2563eb;--c-calls:#ea580c;--c-docs:#c2780a;--c-rent:#16a34a;--c-settings:#64748b;--c-alert:#dc2626;
+  --display:Bahnschrift,"Segoe UI Variable Display","Segoe UI",system-ui,sans-serif;
+  --ease:cubic-bezier(.16,1,.3,1);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--ground);color:var(--ink);font:14px/20px "Segoe UI Variable Text","Segoe UI",system-ui,sans-serif;font-variant-numeric:tabular-nums}
+b,strong{font-weight:600}
+::selection{background:var(--accent-tint)}
+::placeholder{color:var(--faint)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline;text-underline-offset:3px}
+svg.i{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.skip{position:fixed;left:12px;top:-48px;z-index:60;background:var(--primary);color:#fff;padding:8px 12px;border-radius:6px}
+.skip:focus{top:12px;text-decoration:none}
+#main:focus{outline:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.btn,.nav a,.seg button,.pay,.menu button{transition:background-color .12s,color .12s,border-color .12s}
+
+/* shell: open plane */
+.app{display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+aside{background:var(--side);color:var(--side-ink);padding:20px 12px;position:sticky;top:0;height:100vh;overflow:auto}
+aside :focus-visible{outline-color:#fff}
+.brand{display:flex;align-items:center;gap:10px;padding:0 8px 22px}
+.logo{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;background:#f5b841;color:#3b2a05;font:700 15px/1 var(--display);flex:none}
+.brand b{display:block;font:600 18px/22px var(--display);color:#fff;letter-spacing:.01em}
+.brand #spaceName{display:block;font-size:12px;color:var(--side-dim)}
+.navgroup{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--side-dim);padding:0 10px;margin:22px 0 6px}
+.navgroup:first-of-type{margin-top:4px}
+.nav a{display:flex;align-items:center;justify-content:space-between;height:36px;margin-bottom:2px;padding:0 8px;border-radius:8px;color:var(--side-ink);text-decoration:none}
+.nav a:hover{background:rgba(255,255,255,.07);text-decoration:none}
+.nav a.on{background:rgba(255,255,255,.13);color:#fff;font-weight:500}
+.nl{display:flex;align-items:center;gap:10px}
+.ni{width:24px;height:24px;border-radius:7px;display:grid;place-items:center;background:color-mix(in oklab,var(--c) 34%,var(--side));color:color-mix(in oklab,var(--c) 35%,#fff)}
+.nav a.on .ni{background:var(--c);color:#fff}
+.ni svg.i{width:14px;height:14px}
+.syncst{display:flex;align-items:center;gap:8px;margin:20px 10px 0;font-size:12px;color:var(--side-dim)}
+.syncst::before{content:"";width:8px;height:8px;border-radius:50%;background:#5eead4;flex:none}
+.syncst.syncing::before{background:#f5b841}
+.syncst.offline::before,.syncst.error::before{background:#f87171}
+.syncst.error{color:#fecaca}
+.count{min-width:20px;height:18px;padding:0 6px;border-radius:9px;background:var(--neg);color:#fff;font-size:11px;font-weight:600;line-height:18px;text-align:center}
+main{padding:32px 36px 64px;min-width:0}
+.wrap{max-width:1200px}
+
+/* page header */
+.ph{display:flex;align-items:flex-end;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.ph h1{font:600 28px/34px var(--display);letter-spacing:-.01em;margin:0}
+.ph .sub{color:var(--ink2);margin-top:2px}
+.ph .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.crumb{font-size:12px;color:var(--ink2);margin-bottom:6px;display:inline-flex;align-items:center;gap:6px}
+
+/* controls */
+.btn{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border:1px solid var(--control);border-radius:6px;background:var(--surface);color:var(--ink);font:inherit;font-weight:500;cursor:pointer;white-space:nowrap;text-decoration:none}
+.btn:hover{background:var(--hover);text-decoration:none}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--primary);border-color:var(--primary);color:#fff}
+.btn.primary:hover{background:var(--primary-hover);border-color:var(--primary-hover)}
+.btn.sm{height:28px;padding:0 10px}
+.btn.icon{width:32px;padding:0;justify-content:center;color:var(--ink2)}
+.btn.icon.sm{width:28px}
+.btn.ghost{border-color:transparent;background:none;color:var(--ink2)}
+.btn.ghost:hover{background:var(--hover)}
+.btn.danger{color:var(--neg)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--surface);border:1px solid var(--field);border-radius:8px;padding:0 12px;height:38px;width:100%;caret-color:var(--accent)}
+textarea{padding:8px 12px;height:auto;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:transparent}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0}
+.seg{display:inline-flex;background:var(--active);border-radius:8px;padding:3px;gap:2px}
+.seg button{height:28px;padding:0 12px;border:0;border-radius:6px;background:none;font:inherit;color:var(--ink2);cursor:pointer}
+.seg button.on{background:var(--surface);color:var(--ink);font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06)}
+.toolbar{display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+.toolbar input[type=search]{width:280px;height:34px}
+
+/* panels */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;min-width:0;container-type:inline-size;box-shadow:0 1px 2px rgba(13,59,58,.04)}
+.panel+.panel{margin-top:16px}
+.panel-h{display:flex;align-items:center;gap:10px;padding:14px 20px;border-bottom:1px solid var(--rule);flex-wrap:wrap}
+.panel-h h2{font:600 17px/24px var(--display);margin:0}
+.hic{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;flex:none;background:color-mix(in oklab,var(--c) 13%,#fff);color:var(--c)}
+.panel-h .meta{margin-left:auto;font-size:12px;color:var(--ink2)}
+.panel-b{padding:16px 20px}
+.panel-b.flush{padding:0 20px}
+.cols{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px;align-items:start}
+.cols.even{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)}
+
+/* month at a glance */
+.stat{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--rule)}
+.stat:last-child{border-bottom:0}
+.stat>span{color:var(--ink2);display:flex;align-items:center;gap:8px}
+.stat>span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c)}
+.stat b{margin-left:auto;font:600 20px/26px var(--display)}
+.stat .prog i{background:var(--c)}
+.stat .prog{background:color-mix(in oklab,var(--c) 12%,#fff)}
+.stat b small{font-size:12px;font-weight:400;color:var(--ink2)}
+.stat .prog{flex-basis:100%;margin-top:-2px}
+.stat.wrap{flex-wrap:wrap}
+
+/* agenda rows */
+.grp{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2);padding:14px 0 4px;font-weight:600}
+.grp::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--c,var(--field))}
+.grp.g-overdue{color:var(--neg);--c:var(--neg)}
+.grp.g-today{color:#a14a08;--c:var(--c-calls)}
+.grp.g-tomorrow{color:var(--accent);--c:var(--c-today)}
+.row{display:grid;grid-template-columns:80px minmax(0,1fr) auto;gap:4px 12px;align-items:center;min-height:56px;padding:8px 0;border-bottom:1px solid var(--rule)}
+.row:last-child{border-bottom:0}
+.r-time{color:var(--ink2);line-height:18px}
+.r-time small{display:block;font-size:12px}
+.late{color:var(--neg)!important;font-weight:500}
+.r-main{min-width:0}
+.r-title{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-sub{display:flex;align-items:center;gap:6px;min-width:0;margin-top:2px;font-size:12px;color:var(--ink2)}
+.r-sub span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.r-acts{display:flex;gap:4px;align-items:center}
+.r-rem{display:flex;align-items:baseline;gap:6px;max-width:100%;margin-top:6px;padding:4px 8px;border:0;border-radius:6px;background:#fff8e6;color:#5c3a08;font:inherit;font-size:12px;line-height:18px;text-align:left;cursor:pointer}
+.r-rem:hover{background:#fdeec4}
+.r-rem svg.i{width:12px;height:12px;flex:none;align-self:center}
+.r-rem span{min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow-wrap:anywhere}
+.r-rem small{flex:none;font-size:11px;color:#8a5a12}
+.remlist{margin:0 0 16px;padding:0;list-style:none;max-height:240px;overflow:auto}
+.remlist li{padding:8px 0;border-bottom:1px solid var(--rule);white-space:pre-wrap}
+.remlist li:last-child{border-bottom:0}
+.remlist small{display:block;font-size:12px;color:var(--ink2)}
+@container (max-width:540px){
+  .row{grid-template-columns:64px minmax(0,1fr)}
+  .r-acts{grid-column:2}
+}
+.empty{color:var(--ink2);padding:16px 0}
+.empty b{color:var(--ink);font-weight:500}
+
+/* pills */
+.pill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:10px;font-size:12px;font-weight:500;white-space:nowrap;flex:none;background:#f1f1f1;color:#3a3a3a}
+.pill.pos{background:#dcfae5;color:#04250e}
+.pill.neg{background:#ffedea;color:#831c1e}
+.pill.warn{background:#fff4d6;color:#7a3b0c}
+.pill.acc{background:var(--accent-tint);color:var(--accent-ink)}
+.pill.lead{background:#f1eafe;color:#4c1d95}
+
+/* attention list: one entry per person */
+.att{padding:12px 0;border-bottom:1px solid var(--rule)}
+.att:last-child{border-bottom:0}
+.att>a{font-weight:500;color:var(--ink)}
+.att-i{display:flex;gap:8px;align-items:flex-start;margin-top:8px}
+.att-i .t{flex:1;min-width:0;font-size:12px;color:var(--ink2);line-height:20px}
+.att .acts{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+
+/* notices */
+.notice{display:flex;gap:12px;align-items:center;background:#fff8e6;border:1px solid #f8d98a;color:#7a3f0a;border-radius:10px;padding:10px 14px;margin-bottom:12px}
+.notice .btn{margin-left:auto}
+
+/* tables */
+table{width:100%;border-collapse:collapse}
+th{height:38px;text-align:left;font-size:12px;font-weight:400;color:var(--ink2);padding:0 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:10px 12px;border-bottom:1px solid var(--rule);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+th:first-child,td:first-child{padding-left:20px} th:last-child,td:last-child{padding-right:20px}
+.num{text-align:right}
+td .s{font-size:12px;color:var(--ink2)}
+tr.link{cursor:pointer} tr.link:hover td{background:var(--raised)}
+a.name{color:var(--ink);font-weight:500}
+.dash{color:var(--faint)}
+.tablewrap{overflow-x:auto}
+
+/* forms */
+.form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.form label{display:flex;flex-direction:column;gap:8px;font-size:14px;font-weight:500}
+.form label.wide{grid-column:1/-1}
+.form label.check{flex-direction:row;align-items:center;font-weight:400}
+.hint{font-size:12px;font-weight:400;color:var(--ink2)}
+.form .hint{margin-top:-4px}
+.form .wide,.form .fsec{grid-column:1/-1}
+.fsec{font-size:12px;font-weight:500;color:var(--ink2);padding-top:12px;border-top:1px solid var(--rule)}
+.fsec:first-child{padding-top:0;border-top:0}
+details.more summary{cursor:pointer;font-weight:500;padding:4px 0}
+details.more[open] summary{margin-bottom:12px}
+.formfoot{display:flex;gap:8px;align-items:center;margin-top:20px}
+.formfoot .sp{flex:1}
+#newDoc,#newLog{height:auto;align-self:stretch}
+.kv{display:grid;grid-template-columns:minmax(110px,max-content) minmax(0,1fr);gap:8px 20px;margin:0}
+.kv dt{color:var(--ink2)}
+.kv dd{margin:0;overflow-wrap:anywhere}
+.kv .fsec{grid-column:1/-1;margin-top:8px}
+.kv .fsec:first-child{margin-top:0}
+.kv dd.note{white-space:pre-wrap}
+.quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+
+/* docs & bars */
+.doc{display:flex;align-items:center;gap:10px;min-height:40px;border-bottom:1px solid var(--rule)}
+.doc:last-child{border-bottom:0}
+.doc label{display:flex;align-items:center;gap:10px;flex:1;cursor:pointer}
+.doc.ok .n{color:var(--ink2)}
+.doc .d{font-size:12px;color:var(--ink2)}
+.prog{height:8px;border-radius:4px;background:var(--rule);overflow:hidden}
+.prog i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .45s var(--ease)}
+.prog i[data-k^="docs"]{background:var(--c-docs)}
+.barrow{display:grid;grid-template-columns:110px 1fr 36px;gap:10px;align-items:center;height:32px}
+.barrow .bar{height:8px;border-radius:4px;background:var(--c-leads)}
+.barrow .bar.soft{background:#cbb8f6}
+.months{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}
+.months>div{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--ink2);text-align:center}
+.pay{width:100%;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--surface);font:inherit;color:var(--ink2);cursor:pointer}
+.pay:hover{background:var(--hover)}
+.pay.paid{background:var(--pos-tint);border-color:var(--pos-line);color:var(--pos);font-weight:500}
+.pay.due{background:var(--neg-tint);border-color:var(--neg-line);color:var(--neg);font-weight:500}
+.pay:disabled{cursor:default;background:var(--raised);color:#b0b0b0}
+td.paycell{padding:6px 4px;min-width:72px}
+.log{padding:10px 0;border-bottom:1px solid var(--rule)}
+.log:last-child{border-bottom:0}
+.log .w{font-size:12px;color:var(--ink2)}
+
+/* modal, menu, toast */
+.scrim{position:fixed;inset:0;background:rgba(17,17,17,.32);display:flex;align-items:flex-start;justify-content:center;padding:64px 16px;overflow:auto;z-index:20}
+.dialog{background:var(--surface);border-radius:12px;width:100%;max-width:640px;padding:24px;box-shadow:0 24px 64px rgba(0,0,0,.18)}
+.dialog h2{font:600 19px/26px var(--display);margin:0 0 4px}
+.dialog .sub{color:var(--ink2);margin-bottom:20px}
+.menu{position:fixed;z-index:40;background:var(--surface);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.04);padding:4px;min-width:180px;transform-origin:top right}
+.menu button{display:flex;width:100%;height:32px;align-items:center;gap:8px;padding:0 10px;border:0;background:none;border-radius:6px;font:inherit;color:var(--ink);cursor:pointer;text-align:left}
+.menu button:hover,.menu button:focus-visible{background:var(--hover)}
+#toasts{position:fixed;right:20px;bottom:20px;display:flex;flex-direction:column;gap:8px;z-index:50}
+.toast{background:var(--surface);border-radius:8px;box-shadow:0 12px 32px rgba(0,0,0,.14),0 0 0 1px rgba(0,0,0,.05);padding:14px 16px;width:340px}
+.toast.out{opacity:0;transform:translateY(6px);transition:opacity .14s,transform .14s}
+
+/* motion: feedback and continuity only */
+@keyframes fade{from{opacity:0}}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}}
+@keyframes drop{from{opacity:0;transform:translateY(-4px) scale(.97)}}
+@keyframes ack{from{transform:scale(.9)}}
+.scrim{animation:fade .16s ease-out}
+.dialog{animation:rise .28s var(--ease)}
+.menu{animation:drop .14s var(--ease)}
+.toast{animation:rise .24s var(--ease)}
+.pay.ack{animation:ack .32s var(--ease)}
+@media (prefers-reduced-motion:reduce){
+  .dialog,.toast,.menu{animation:fade .16s ease-out}
+  .pay.ack,.btn:active{animation:none;transform:none}
+  .toast.out{transform:none}
+}
+.toast b{display:block;font-weight:600}
+.toast .s{font-size:12px;color:var(--ink2)}
+.toast .acts{display:flex;gap:6px;margin-top:10px}
+
+@media(max-width:960px){.cols,.cols.even{grid-template-columns:1fr}}
+@media(max-width:760px){
+  .app{grid-template-columns:1fr}
+  aside{position:sticky;height:auto;padding:8px 12px;display:flex;align-items:center;gap:12px;overflow-x:auto;border-right:0;z-index:10}
+  .brand{padding:0;white-space:nowrap}.brand b{font-size:16px}.logo{width:28px;height:28px}#spaceName,.navgroup{display:none}
+  aside{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 32px),transparent)}
+  .nav{display:flex;gap:2px;padding-right:32px}.nav a{white-space:nowrap;margin:0;gap:6px}
+  main{padding:20px 16px 48px}
+  .syncst{display:none}
+  .form{grid-template-columns:1fr}
+  .toolbar input[type=search]{width:100%}
+  #toasts{left:12px;right:12px;bottom:12px}.toast{width:auto}
+}
+/* touch: comfortable targets */
+@media (max-width:760px),(pointer:coarse){
+  .btn{height:40px}.btn.sm{height:36px}.btn.icon{width:40px}.btn.icon.sm{width:36px}
+  .nav a{height:40px}.seg button{height:34px}.pay{height:36px}
+  input,select{height:44px}.menu button{height:40px}
+}
+</style>
+</head>
+<body>
+<button class="skip btn" data-act="skip">Skip to content</button>
+<div class="app">
+  <aside>
+    <div class="brand"><span class="logo" aria-hidden="true">S</span><div><b>SpaceDesk</b><span id="spaceName"></span></div></div>
+    <nav class="nav" id="nav" aria-label="Main"></nav>
+    <div id="syncState" class="syncst" role="status" hidden></div>
+  </aside>
+  <main><div class="wrap" id="main" tabindex="-1"></div></main>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<input type="file" id="importFile" accept=".json" hidden>
+
+<script>
+// If anything breaks while starting, say so on screen instead of showing a blank page.
+window.addEventListener('error', e => {
+  const m = document.getElementById('main'); if(!m || m.textContent.trim()) return;
+  m.innerHTML = '<div class="notice" style="display:block"><b>SpaceDesk could not start.</b><br>' + String(e.message || e.error || 'Unknown error').replace(/</g,'&lt;') + (e.lineno ? ' (line ' + e.lineno + ')' : '') + '</div>';
+});
+</script>
+<script>
+// ===================== constants =====================
+const KEY = 'spacedesk-v1';
+const STATUSES = ['Lead','Visited','Negotiating','Active','Notice period','Left','Lost'];
+const PIPELINE = ['Lead','Visited','Negotiating'];
+const CURRENT  = ['Active','Notice period'];
+const MEMBER   = ['Active','Notice period','Left'];
+const SALES = 'Sales follow-up';
+const CLIENT_PURPOSES = ['Renewal','Rent collection','Document collection','Check-in','Upsell','Other'];
+const PURPOSES = [SALES, ...CLIENT_PURPOSES];
+const SOURCES = ['Walk-in','Referral','Google','Instagram','Facebook','LinkedIn','Website','Broker','Listing site','Other'];
+const LOST_REASONS = ['Price too high','Location','Chose another space','Plan not available','No response','Other'];
+const FU_TYPES = ['Call','WhatsApp','Email','Site visit','Meeting'];
+const TASK_CATS = ['Post ad','Marketing','Billing','Admin','Maintenance','Other'];
+const DEFAULT_DOCS = ['ID proof','Address proof','PAN / Tax ID','Company registration certificate','GST certificate','Signed agreement','Security deposit receipt','Photograph','Authorization letter (for companies)'];
+const DEFAULT_PLANS = ['Hot desk','Dedicated desk','Private cabin','Virtual office','Meeting room','Day pass'];
+const DEFAULT_TPL = {
+  rent: 'Hi {name}, a friendly reminder that rent of {amount} for {month} at {space} is due. Please share the payment confirmation once done. Thank you!',
+  docs: 'Hi {name}, to complete your file at {space}, please share: {docs}. Thank you!',
+  renewal: 'Hi {name}, your agreement at {space} ends on {date}. Shall we plan the renewal? Happy to discuss any changes you need.',
+  birthday: 'Happy birthday {name}! Wishing you a great year ahead. — Team {space}',
+  lead: 'Hi {name}, this is from {space}. Following up on your enquiry for a {plan}. When would be a good time to visit or talk?'
+};
+
+// ===================== helpers =====================
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2,'0');
+const toLocal = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+const nowStr = () => toLocal(new Date());
+const today = () => nowStr().slice(0,10);
+const addDays = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+const atHour = (days,h=11) => { const d = addDays(new Date(),days); d.setHours(h,0,0,0); return toLocal(d); };
+const monthKey = (d=new Date()) => toLocal(d).slice(0,7);
+const monthLabel = (k,long) => new Date(k+'-01T00:00').toLocaleDateString(undefined,{month:long?'long':'short',year:long?'numeric':undefined});
+const daysBetween = (a,b) => Math.round((new Date(b.slice(0,10)+'T00:00') - new Date(a.slice(0,10)+'T00:00'))/864e5);
+const fmtTime = s => new Date(s).toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'});
+const fmtDay = s => new Date(s.slice(0,10)+'T00:00').toLocaleDateString(undefined,{weekday:'short',day:'numeric',month:'short'});
+const fmtDT = s => s ? `${fmtDay(s)}, ${fmtTime(s)}` : '';
+const fmtD = s => s ? new Date(s.slice(0,10)+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}) : '';
+const money = n => (db.settings.currency||'') + Math.round(Number(n||0)).toLocaleString(db.settings.currency==='₹'?'en-IN':undefined);
+const client = id => db.clients.find(c => c.id === id);
+const plural = (n,w) => `${n} ${w}${n===1?'':'s'}`;
+const ordinal = n => n + (['th','st','nd','rd'][(n%100-20)%10] || ['th','st','nd','rd'][n%100] || 'th');
+function relDays(d){ const n = daysBetween(today(), d); return n===0?'today':n===1?'tomorrow':n===-1?'yesterday':n>0?`in ${n} days`:`${-n} days ago`; }
+
+function waNumber(phone){
+  let d = String(phone||'').replace(/\D/g,'');
+  if(d.startsWith('0')) d = d.replace(/^0+/,'');
+  if(d.length === 10 && db.settings.countryCode) d = db.settings.countryCode + d;
+  return d;
+}
+const waLink = (phone, text='') => `https:\/\/wa.me/${waNumber(phone)}${text?'?text='+encodeURIComponent(text):''}`;
+function fillTpl(key, c, extra={}){
+  const vars = {name:(c.name||'').split(' ')[0], space:db.settings.spaceName||'our space', amount:money(c.rent), month:monthLabel(monthKey(),true),
+    docs:(c.docs||[]).filter(d=>!d.collected).map(d=>d.name).join(', '), date:fmtD(c.endDate), plan:(c.plan||'workspace').toLowerCase(), ...extra};
+  return (db.settings.templates[key]||'').replace(/\{(\w+)\}/g,(m,k)=>vars[k]??m);
+}
+
+const ICONS = {
+  phone:'<path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1.9.4 1.8.7 2.7a2 2 0 0 1-.5 2.1L8 9.8a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.8.6 2.7.7a2 2 0 0 1 1.7 2z"/>',
+  chat:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8v.5z"/>',
+  more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+  back:'<path d="M19 12H5M12 19l-7-7 7-7"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
+  mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+  users:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+  file:'<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5M9 13h6M9 17h4"/>',
+  wallet:'<path d="M19 7V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3"/><path d="M21 9h-6a3 3 0 0 0 0 6h6z"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  cal:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  alert:'<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01"/>',
+  chart:'<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+  clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  note:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>'
+};
+// Each section owns one colour: its sidebar icon, panel icons and bars.
+const AREA = {today:['sun','today'], leads:['target','leads'], clients:['users','clients'], calls:['phone','calls'], docs:['file','docs'], rent:['wallet','rent'], settings:['gear','settings']};
+const hic = (icon, c) => `<span class="hic" style="--c:var(--c-${c})">${ic(icon)}</span>`;
+const ic = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${ICONS[n]}</svg>`;
+
+// ===================== storage =====================
+function fresh(){
+  return {
+    clients:[], followups:[], adLog:[],
+    tasks:[
+      {id:uid(),title:'Post ad on Instagram and Facebook',category:'Post ad',due:atHour(1,10),repeatDays:7,note:'Photos of cabins and the current offer',done:false},
+      {id:uid(),title:'Refresh Google Business profile',category:'Post ad',due:atHour(1,12),repeatDays:14,note:'New photos, reply to reviews',done:false},
+      {id:uid(),title:'Renew listings on property / coworking sites',category:'Post ad',due:atHour(2,11),repeatDays:7,note:'',done:false}
+    ],
+    settings:{spaceName:'',currency:'₹',countryCode:'91',totalSeats:0,docTemplate:[...DEFAULT_DOCS],plans:[...DEFAULT_PLANS],templates:{...DEFAULT_TPL},sound:true,lastBackup:''},
+    notified:{}
+  };
+}
+function migrate(d){
+  const f = fresh();
+  d.clients ||= []; d.followups ||= []; d.tasks ||= []; d.notified ||= {}; d.adLog ||= [];
+  d.settings = Object.assign(f.settings, d.settings||{});
+  d.settings.templates = Object.assign({...DEFAULT_TPL}, d.settings.templates||{});
+  d.clients.forEach(c => { c.docs ||= []; c.payments ||= {}; c.log ||= []; });
+  d.followups.forEach(x => {
+    if(!x.purpose){ const c = d.clients.find(c=>c.id===x.clientId); x.purpose = c && MEMBER.includes(c.status) ? 'Check-in' : SALES; }
+    if(x.type === 'Site visit / tour') x.type = 'Site visit';
+  });
+  return d;
+}
+function load(){ try{ const d = JSON.parse(localStorage.getItem(KEY)); if(d) return migrate(d); }catch(e){} return fresh(); }
+// A new device (a phone, say) stays "pristine" until its first successful sync, even across reloads,
+// so its starter data is replaced by the shared copy instead of being merged in as duplicates.
+const PRISTINE_KEY = 'spacedesk-pristine';
+let PRISTINE = false;
+try{ PRISTINE = !localStorage.getItem(KEY) || localStorage.getItem(PRISTINE_KEY) === '1'; if(PRISTINE) localStorage.setItem(PRISTINE_KEY, '1'); }catch(e){ PRISTINE = true; }
+let db = load();
+function saveLocal(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }
+  catch(e){ if(!window.SPACEDESK_SYNC) toast({title:'Could not save', sub:'Browser storage is full or blocked. Export a backup now.'}); }
+}
+function save(){ saveLocal(); scheduleSync(); }
+
+// ===================== sync with Google Sheets =====================
+// One shared copy lives in the user's Google Sheet (see google-sync/Code.gs). Each device keeps
+// the copy it last synced ("base") and merges three ways, record by record, so edits made on the
+// phone and on the PC at the same time are both kept.
+const SYNC_KEY = 'spacedesk-sync';
+// The page's own source, captured before anything is drawn. The PC sends it to the Sheet so the phone
+// always opens the same version. (The phone's copy has the config filled in, so it never re-sends.)
+const APP_SOURCE = location.protocol !== 'file:' ? '' : '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+const hashText = s => { let h = 5381; for(let i = 0; i < s.length; i++) h = (h * 33 ^ s.charCodeAt(i)) >>> 0; return h.toString(36) + s.length; };
+const sync = {cfg:{}, state:'off', err:'', timer:null, busy:false, again:false, pendingRender:false};
+try{ sync.cfg = JSON.parse(localStorage.getItem(SYNC_KEY)) || {}; }catch(e){}
+if(window.SPACEDESK_SYNC){ sync.cfg.url = window.SPACEDESK_SYNC.url; sync.cfg.key = window.SPACEDESK_SYNC.key; sync.cfg.hosted = true; }
+// A phone link like  https://<you>.github.io/spacedesk/#key=<key>&s=<script id>  connects this browser once,
+// then the key is kept here and removed from the address bar.
+(function(){
+  const m = location.hash.match(/^#key=([^&]+)&s=([A-Za-z0-9_-]+)/);
+  if(!m) return;
+  sync.cfg = {key: decodeURIComponent(m[1]), url: 'https:\/\/script.google.com/macros/s/' + m[2] + '/exec'};
+  try{ localStorage.setItem(SYNC_KEY, JSON.stringify(sync.cfg)); }catch(e){}
+  history.replaceState(null, '', location.pathname + location.search + '#/today');
+})();
+const syncOn = () => !!(sync.cfg.key && (sync.cfg.url || sync.cfg.hosted));
+function saveSyncCfg(){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(sync.cfg)); }catch(e){} }
+
+// What travels between devices. Reminder bookkeeping and "asked about notifications" stay per device.
+const syncable = d => { const {notifAsked, ...settings} = d.settings || {};
+  return {clients:d.clients||[], followups:d.followups||[], tasks:d.tasks||[], adLog:d.adLog||[], imports:d.imports||{}, settings}; };
+const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+const APPEND_ONLY = ['log', 'remarks'];       // lists that only grow: keep entries from both sides
+function pick3(b, l, r, key){
+  if(same(l, r) || same(l, b)) return r;      // unchanged here: take theirs
+  if(same(r, b)) return l;                    // unchanged there: take ours
+  if(l === undefined) return r;               // deleted here, edited there: keep the edit
+  if(r === undefined) return l;
+  if(Array.isArray(l) && Array.isArray(r)){
+    if(!APPEND_ONLY.includes(key)) return l;
+    const seen = new Set(r.map(x => JSON.stringify(x)));
+    return [...r, ...l.filter(x => !seen.has(JSON.stringify(x)))].sort((x, y) => (x.at||'') < (y.at||'') ? -1 : (x.at||'') > (y.at||'') ? 1 : 0);
+  }
+  if(l && r && typeof l === 'object' && typeof r === 'object'){
+    const out = {};
+    new Set([...Object.keys(r), ...Object.keys(l)]).forEach(k => { const v = pick3(b?.[k], l[k], r[k], k); if(v !== undefined) out[k] = v; });
+    return out;
+  }
+  return l;
+}
+function mergeById(b = [], l = [], r = []){
+  const B = new Map(b.map(x => [x.id, x])), L = new Map(l.map(x => [x.id, x])), R = new Map(r.map(x => [x.id, x]));
+  const ids = [...new Set([...r.map(x => x.id), ...l.map(x => x.id)])];
+  return ids.map(id => pick3(B.get(id), L.get(id), R.get(id))).filter(x => x !== undefined);
+}
+function merge3(base, local, remote){
+  base ||= {};
+  const ad = new Map([...remote.adLog, ...local.adLog].map(x => [x.at + '|' + x.title, x]));
+  return {
+    clients: mergeById(base.clients, local.clients, remote.clients),
+    followups: mergeById(base.followups, local.followups, remote.followups),
+    tasks: mergeById(base.tasks, local.tasks, remote.tasks),
+    adLog: [...ad.values()].sort((x, y) => x.at < y.at ? -1 : 1),
+    imports: {...remote.imports, ...local.imports},
+    settings: pick3(base.settings, local.settings, remote.settings) || local.settings
+  };
+}
+
+function syncCall(body){
+  body.key = sync.cfg.key;
+  if(window.google?.script?.run) return new Promise((res, rej) =>
+    google.script.run.withSuccessHandler(t => res(JSON.parse(t))).withFailureHandler(rej).api(JSON.stringify(body)));
+  // text/plain keeps this a "simple" request, which Google's web apps accept from any page
+  // credentials:'omit' keeps Google accounts signed in to this browser out of it (they make Google refuse the request)
+  return fetch(sync.cfg.url, {method:'POST', credentials:'omit', headers:{'Content-Type':'text/plain;charset=utf-8'}, body:JSON.stringify(body)})
+    .then(r => { if(!r.ok) throw new Error('Google returned ' + r.status); return r.json(); },
+          () => { throw new Error(navigator.onLine === false ? 'No internet connection.' : 'Could not reach your Google script. Check the link, and that it is deployed as a web app with access set to "Anyone".'); });
+}
+function scheduleSync(ms = 1500){
+  if(!syncOn()) return;
+  clearTimeout(sync.timer); sync.timer = setTimeout(runSync, ms);
+}
+const typing = () => !!document.querySelector('#modal') || !!document.activeElement?.closest?.('#main input, #main textarea, #main select');
+function redrawAfterSync(){
+  if(!booted) return;
+  if(typing()){ sync.pendingRender = true; return; }
+  sync.pendingRender = false;
+  ui.editing ? refresh() : render();
+}
+async function runSync(){
+  if(!syncOn()) return;
+  if(sync.busy){ sync.again = true; return; }
+  sync.busy = true; setSyncState('syncing');
+  try{
+    for(let attempt = 0; attempt < 4; attempt++){
+      const started = syncable(db);
+      const res = await syncCall({action:'pull'});
+      if(res.error) throw new Error(res.error);
+      const remote = res.data ? JSON.parse(res.data) : null;
+      const base = sync.cfg.base ? JSON.parse(sync.cfg.base) : null;
+      let merged, version = res.version;
+      if(!remote) merged = started;                                         // empty sheet: upload what we have
+      else if(!base && (PRISTINE || !db.clients.length)) merged = syncable(remote);   // new device: take the shared copy
+      else merged = merge3(base, started, syncable(remote));
+      if(!remote || !same(merged, syncable(remote))){
+        const p = await syncCall({action:'push', baseVersion:version, data:JSON.stringify(merged)});
+        if(p.conflict) continue;                                            // another device saved first: merge again
+        if(p.error) throw new Error(p.error);
+        version = p.version;
+      }
+      // Keep anything typed while we were talking to Google.
+      const now = syncable(db), final = same(now, started) ? merged : merge3(started, now, merged);
+      if(!same(now, started)) sync.again = true;
+      const changed = !same(now, final);
+      Object.assign(db, final, {settings:{...final.settings, notifAsked:db.settings.notifAsked}});
+      migrate(db); saveLocal();
+      sync.cfg.base = JSON.stringify(merged); sync.cfg.version = version; sync.cfg.last = nowStr(); saveSyncCfg();
+      PRISTINE = false; sync.err = '';
+      try{ localStorage.removeItem(PRISTINE_KEY); }catch(e){}
+      if(APP_SOURCE && !sync.appSkip && sync.cfg.appHash !== hashText(APP_SOURCE)){
+        const a = await syncCall({action:'app', html:APP_SOURCE});
+        if(a.ok){ sync.cfg.appHash = hashText(APP_SOURCE); saveSyncCfg(); }
+        else sync.appSkip = true;     // older script without app upload: the phone loads the app from Drive instead
+      }
+      setSyncState('ok');
+      if(changed) redrawAfterSync();
+      return;
+    }
+    throw new Error('Too many edits at once. Will try again.');
+  }catch(e){
+    sync.err = String(e?.message || e);
+    setSyncState(navigator.onLine === false ? 'offline' : 'error');
+  }finally{
+    sync.busy = false;
+    if(sync.again){ sync.again = false; scheduleSync(500); }
+  }
+}
+function syncLabel(){
+  if(!syncOn()) return '';
+  return {syncing:'Syncing…', ok:`Synced ${sync.cfg.last ? fmtTime(sync.cfg.last) : ''}`, offline:'Offline · will retry', error:'Sync problem · will retry', off:''}[sync.state] || '';
+}
+function setSyncState(s){
+  sync.state = s;
+  const el = document.getElementById('syncState');
+  if(el){ el.textContent = syncLabel(); el.className = 'syncst ' + s; el.title = sync.err || ''; el.hidden = !syncOn(); }
+  const info = document.getElementById('syncInfo'); if(info) info.innerHTML = syncInfoHtml();
+}
+function syncInfoHtml(){
+  if(!syncOn()) return 'Not connected.';
+  return `${esc(syncLabel())}${sync.state==='ok' && sync.cfg.last ? ` on ${fmtDay(sync.cfg.last)}` : ''}${sync.err ? `<br><span class="late">${esc(sync.err)}</span>` : ''}`;
+}
+setInterval(() => { if(document.visibilityState === 'visible') runSync(); if(sync.pendingRender) redrawAfterSync(); }, 45000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') runSync(); });
+window.addEventListener('online', () => runSync());
+document.addEventListener('focusout', () => setTimeout(() => { if(sync.pendingRender) redrawAfterSync(); }, 0));
+
+
+
+// ===================== domain rules =====================
+// Changing status is the one place that keeps follow-ups honest.
+function setStatus(c, s){
+  if(!s || c.status === s) return 0;
+  const from = c.status; c.status = s;
+  c.log.push({at:nowStr(), text:`Status changed from ${from} to ${s}`});
+  let closed = 0;
+  if(!PIPELINE.includes(s)){
+    db.followups.filter(f => f.clientId===c.id && !f.done && f.purpose===SALES).forEach(f => {
+      f.done = true; f.doneAt = nowStr(); f.outcome = `Closed automatically: became ${s}`; f.auto = true; closed++;
+    });
+  }
+  if(s === 'Active' && !c.startDate) c.startDate = today();
+  if(['Left','Lost'].includes(s)){
+    db.followups.filter(f => f.clientId===c.id && !f.done).forEach(f => { f.done=true; f.doneAt=nowStr(); f.outcome=`Closed automatically: ${s}`; f.auto=true; closed++; });
+  }
+  return closed;
+}
+const openFus = id => db.followups.filter(f => f.clientId===id && !f.done).sort((a,b)=>a.due<b.due?-1:1);
+function rentState(c, mk=monthKey()){
+  if(!Number(c.rent) || !CURRENT.includes(c.status)) return null;
+  if(c.payments[mk]) return 'paid';
+  if(c.startDate && c.startDate.slice(0,7) > mk) return null;
+  const [y,m] = mk.split('-').map(Number), last = new Date(y,m,0).getDate();
+  const dueDay = Math.min(Number(c.rentDueDay||1), last);
+  if(mk < monthKey()) return 'overdue';
+  return new Date().getDate() >= dueDay ? 'overdue' : 'upcoming';
+}
+// Unpaid months we can trust: only since the client was added to SpaceDesk (older months were never tracked here).
+function arrears(c){
+  const from = (c.createdAt || today()).slice(0,7);
+  return last6().filter(m => m >= from && rentState(c, m) === 'overdue');
+}
+
+function reminders(){
+  const out = [];
+  db.followups.filter(f=>!f.done).forEach(f => {
+    const c = client(f.clientId);
+    out.push({kind:'fu', id:f.id, due:f.due, purpose:f.purpose, clientId:f.clientId, phone:c?c.phone:f.whoPhone,
+      title: c ? c.name : (f.who || 'Unnamed contact'),
+      sub: [f.type, c && c.company, f.note].filter(Boolean).join(' · ')});
+  });
+  db.tasks.filter(t=>!t.done).forEach(t => out.push({kind:'task', id:t.id, due:t.due, purpose:t.category, repeat:t.repeatDays,
+    title:t.title, sub:[t.repeatDays?`Every ${t.repeatDays===7?'week':t.repeatDays===30?'month':t.repeatDays+' days'}`:'', t.note].filter(Boolean).join(' · ')}));
+  return out.sort((a,b) => a.due < b.due ? -1 : 1);
+}
+
+function attention(){
+  const a = [], t = today();
+  db.clients.forEach(c => {
+    const fus = openFus(c.id), has = p => fus.find(f => f.purpose === p);
+    if(PIPELINE.includes(c.status) && !fus.length)
+      a.push({c, sev:'warn', label:'No follow-up', text:`${c.status} with nothing scheduled`, acts:[['Schedule follow-up',`data-act="newFu" data-client="${c.id}" data-purpose="${SALES}"`], c.phone&&['Message',`data-act="wa" data-id="${c.id}" data-tpl="lead"`]]});
+    if(CURRENT.includes(c.status)){
+      if(c.endDate && c.status === 'Notice period'){
+        const d = daysBetween(t, c.endDate);
+        if(d <= 30) a.push({c, sev:'warn', label:'Moving out', text:`${d<0?'Left':'Leaves'} ${relDays(c.endDate)} (${fmtD(c.endDate)}). Collect keys and settle the deposit.`, acts:[]});
+      }
+      else if(c.endDate){
+        const d = daysBetween(t, c.endDate);
+        if(d <= 30){ const r = has('Renewal');
+          a.push({c, sev:d<=7?'neg':'warn', label:d<0?'Contract ended':'Renewal due', text:`Agreement ${d<0?'ended':'ends'} ${relDays(c.endDate)} (${fmtD(c.endDate)})`,
+            note: r ? `Renewal call booked ${fmtDT(r.due)}` : '',
+            acts: r ? [] : [['Schedule renewal call',`data-act="newFu" data-client="${c.id}" data-purpose="Renewal"`], c.phone&&['Message',`data-act="wa" data-id="${c.id}" data-tpl="renewal"`]]}); }
+      }
+      const owed = arrears(c);
+      if(owed.length)
+        a.push({c, sev:'neg', label:'Rent due', text: owed.length > 1
+            ? `${money(c.rent*owed.length)} unpaid for ${owed.length} months, since ${monthLabel(owed[0],true)}`
+            : `${money(c.rent)} for ${monthLabel(owed[0],true)} not received`,
+          acts:[[`Mark ${monthLabel(owed[0])} paid`,`data-act="pay" data-id="${c.id}" data-m="${owed[0]}"`], c.phone&&['Send reminder',`data-act="wa" data-id="${c.id}" data-tpl="rent"`]]});
+      const pend = c.docs.filter(d=>!d.collected).length;
+      if(pend) a.push({c, sev:'warn', label:'Documents', text:`${plural(pend,'document')} still to collect`,
+        acts:[c.phone&&['Ask on WhatsApp',`data-act="wa" data-id="${c.id}" data-tpl="docs"`]]});
+    }
+    if(c.status==='Left' && Number(c.deposit) && !c.depositRefunded)
+      a.push({c, sev:'warn', label:'Deposit', text:`Refund ${money(c.deposit)} security deposit`, acts:[['Mark refunded',`data-act="refund" data-id="${c.id}"`]]});
+    if(c.birthday && c.birthday.slice(5) === t.slice(5) && !['Left','Lost'].includes(c.status))
+      a.push({c, sev:'acc', label:'Birthday', text:'Birthday today', acts:[c.phone&&['Send wishes',`data-act="wa" data-id="${c.id}" data-tpl="birthday"`]]});
+  });
+  const order = {neg:0, warn:1, acc:2};
+  return a.sort((x,y)=>order[x.sev]-order[y.sev]);
+}
+
+// ===================== notifications =====================
+let audioCtx;
+function beep(){
+  if(!db.settings.sound) return;
+  try{
+    audioCtx ||= new (window.AudioContext||window.webkitAudioContext)();
+    [0,.22].forEach(off => { const o=audioCtx.createOscillator(), g=audioCtx.createGain(); o.frequency.value=880; o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(.12,audioCtx.currentTime+off); g.gain.exponentialRampToValueAtTime(.001,audioCtx.currentTime+off+.18); o.start(audioCtx.currentTime+off); o.stop(audioCtx.currentTime+off+.2); });
+  }catch(e){}
+}
+const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+function dropToast(el){
+  if(!el.isConnected) return;
+  el.classList.add('out'); setTimeout(() => el.remove(), 150);
+}
+// sticky: stays until dismissed. undo: a db snapshot taken before the change.
+function toast({title, sub, r, undo, sticky, view}){
+  const box = $('#toasts');
+  if(undo) box.querySelectorAll('.toast.undo').forEach(dropToast);   // one undo at a time
+  const el = document.createElement('div'); el.className = 'toast' + (undo ? ' undo' : ''); el.setAttribute('role','status');
+  el.innerHTML = `<b>${esc(title)}</b>${sub?`<div class="s">${esc(sub)}</div>`:''}
+    <div class="acts">${r ? `${r.phone?`<a class="btn sm" href="tel:${esc(r.phone)}">${ic('phone')} Call</a>`:''}
+      <button class="btn sm" data-act="done" data-kind="${r.kind}" data-id="${r.id}">Done</button>
+      <button class="btn sm" data-act="snooze" data-kind="${r.kind}" data-id="${r.id}" data-mins="60">Snooze 1 hour</button>` : ''}
+      ${view ? `<a class="btn sm" href="#/today">Open Today</a>` : ''}
+      ${undo ? `<button class="btn sm u">Undo</button>` : ''}
+      <button class="btn sm ghost x">Dismiss</button></div>`;
+  el.querySelector('.x').onclick = () => dropToast(el);
+  if(undo) el.querySelector('.u').onclick = () => { db = migrate(JSON.parse(undo)); save(); refresh(); dropToast(el); };
+  el.addEventListener('click', e => { if(e.target.closest('[data-act],a')) setTimeout(()=>dropToast(el)); });
+  box.appendChild(el);
+  while(box.children.length > 4) box.firstElementChild.remove();
+  if(!r && !sticky) setTimeout(()=>dropToast(el), undo ? 7000 : 4000);
+}
+function notify(title, body, tag){
+  if(!('Notification' in window) || Notification.permission !== 'granted') return;
+  try{ const n = new Notification(title, {body, tag, requireInteraction:true}); n.onclick = () => { window.focus(); n.close(); }; }catch(e){}
+}
+// Redraw when notification permission changes outside the app (Edge prompt or site settings).
+navigator.permissions?.query({name:'notifications'}).then(p => { p.onchange = () => refresh(); }).catch(()=>{});
+let booted = false;
+function checkDue(){
+  const now = nowStr(), due = reminders().filter(r => r.due <= now), keep = {}, fresh = [];
+  due.forEach(r => { const k = r.kind + r.id + r.due; keep[k] = 1; if(!db.notified[k]) fresh.push([k, r]); });
+  // On opening, a backlog becomes one summary instead of a stack of alerts.
+  if(!booted && fresh.length > 1){
+    const names = fresh.slice(0,3).map(([,r]) => r.title).join(', ') + (fresh.length > 3 ? ` and ${fresh.length-3} more` : '');
+    toast({title:`${plural(fresh.length,'reminder')} due`, sub:names, sticky:true, view:route().name!=='today'}); beep();
+    notify(`${plural(fresh.length,'reminder')} due`, names, 'summary');
+  } else fresh.forEach(([k, r]) => {
+    toast({title: r.kind==='fu' ? `${r.purpose}: ${r.title}` : r.title, sub:r.sub, r}); beep();
+    notify(r.kind==='fu' ? `Call ${r.title}` : r.title, r.sub||'', k);
+  });
+  booted = true;
+  if(JSON.stringify(keep) !== JSON.stringify(db.notified)){ db.notified = keep; saveLocal(); }   // per device: no need to sync
+  document.title = due.length ? `(${due.length}) SpaceDesk` : 'SpaceDesk';
+  renderNav(due.length);
+}
+// Change something, and offer to take it back.
+function undoable(title, sub, fn){ const snap = JSON.stringify(db); fn(); toast({title, sub, undo:snap}); }
+// A finished row leaves the list before the list redraws, so you see what went.
+function leave(kind, id){
+  const rows = [...document.querySelectorAll(`.row[data-row="${kind}:${id}"]`)];
+  if(!rows.length) return Promise.resolve();
+  return Promise.all(rows.map(el => {
+    el.style.overflow = 'hidden';
+    const h = el.offsetHeight + 'px';
+    const kf = reduceMotion.matches ? [{opacity:1},{opacity:0}]
+      : [{opacity:1, transform:'none', height:h},
+         {opacity:0, transform:'translateX(16px)', height:h, offset:.55},
+         {opacity:0, transform:'translateX(16px)', height:'0px', minHeight:'0px', paddingTop:'0px', paddingBottom:'0px'}];
+    return el.animate(kf, {duration: reduceMotion.matches ? 120 : 320, easing:'cubic-bezier(.16,1,.3,1)', fill:'forwards'}).finished.catch(()=>{});
+  }));
+}
+
+// ===================== export helpers =====================
+function download(name, text, type){
+  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([text],{type})); a.download = name; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+const icsEsc = s => String(s||'').replace(/[\\;,]/g, m=>'\\'+m).replace(/\n/g,'\\n');
+function exportIcs(r){
+  const f = x => x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z', d = new Date(r.due);
+  const L = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-\/\/SpaceDesk\/\/EN','BEGIN:VEVENT',`UID:${r.id}@spacedesk`,`DTSTAMP:${f(new Date())}`,
+    `DTSTART:${f(d)}`,`DTEND:${f(new Date(d.getTime()+15*6e4))}`,`SUMMARY:${icsEsc((r.kind==='fu'?'Call ':'')+r.title)}`,
+    `DESCRIPTION:${icsEsc([r.purpose, r.sub, r.phone&&'Phone: '+r.phone].filter(Boolean).join('\n'))}`];
+  if(r.repeat) L.push(`RRULE:FREQ=DAILY;INTERVAL=${r.repeat}`);
+  L.push('BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Reminder','TRIGGER:-PT10M','END:VALARM','END:VEVENT','END:VCALENDAR');
+  download(r.title.replace(/[^\w ]+/g,'').trim().slice(0,40)+'.ics', L.join('\r\n'), 'text/calendar');
+}
+
+// ===================== overlays =====================
+let returnFocus = null;
+function openModal(html){
+  if(!$('#modal')) returnFocus = document.activeElement;
+  $('#modal')?.remove(); closeMenu();
+  const bg = document.createElement('div'); bg.className='scrim'; bg.id='modal';
+  bg.innerHTML = `<div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dlgTitle">${html}</div>`;
+  bg.querySelector('h2')?.setAttribute('id','dlgTitle');
+  bg.addEventListener('mousedown', e => { if(e.target === bg) closeModal(); });
+  document.body.appendChild(bg);
+  $('.app').inert = true;
+  bg.querySelector('input:not([type=checkbox]):not([type=hidden]),select,textarea')?.focus();
+}
+function closeModal(){
+  if(!$('#modal')) return;
+  $('#modal').remove(); $('.app').inert = false;
+  if(returnFocus && document.contains(returnFocus)) returnFocus.focus();
+  returnFocus = null;
+}
+let menuEl = null, menuBtn = null;
+function openMenu(btn, items){
+  closeMenu(); menuBtn = btn; btn.setAttribute('aria-expanded','true');
+  menuEl = document.createElement('div'); menuEl.className = 'menu'; menuEl.setAttribute('role','menu');
+  menuEl.innerHTML = items.filter(Boolean).map(([label, attrs]) => `<button role="menuitem" ${attrs}>${label}</button>`).join('');
+  document.body.appendChild(menuEl);
+  const r = btn.getBoundingClientRect(), h = menuEl.offsetHeight, w = menuEl.offsetWidth;
+  menuEl.style.top = (r.bottom + 4 + h > innerHeight ? r.top - h - 4 : r.bottom + 4) + 'px';
+  menuEl.style.left = Math.max(8, r.right - w) + 'px';
+  menuEl.querySelector('button')?.focus();
+}
+function closeMenu(refocus){
+  if(!menuEl) return;
+  menuEl.remove(); menuEl = null;
+  if(menuBtn){ menuBtn.setAttribute('aria-expanded','false'); if(refocus && document.contains(menuBtn)) menuBtn.focus(); }
+  menuBtn = null;
+}
+
+const fld = (label,name,val,type='text',extra='',show='',cls='') => `<label class="${cls}" ${show?`data-show="${show}"`:''}>${label}<input name="${name}" type="${type}" value="${esc(val??'')}" ${extra}></label>`;
+const sel = (label,name,val,opts,show='',cls='') => `<label class="${cls}" ${show?`data-show="${show}"`:''}>${label}<select name="${name}">${opts.map(o=>{const [v,t]=Array.isArray(o)?o:[o,o];return `<option value="${esc(v)}" ${String(v)===String(val??'')?'selected':''}>${esc(t)}</option>`}).join('')}</select></label>`;
+const formData = id => Object.fromEntries(new FormData(document.getElementById(id)));
+const withCurrent = (list, v) => v && !list.includes(v) ? [...list, v] : list;
+
+// ===================== routing =====================
+const VIEWS = [['today','Today','Work'],['leads','Leads','Work'],['clients','Clients','Work'],['calls','Calls and tasks','Work'],
+               ['docs','Documents','Records'],['rent','Rent','Records'],['settings','Settings','Space']];
+let ui = {q:'', leadStage:'open', clientTab:'Active', callsTab:'open', callsFilter:'all', editing:null};
+function route(){
+  const [name, id] = location.hash.replace(/^#\/?/,'').split('/');
+  return {name: name==='client' || VIEWS.some(v=>v[0]===name) ? name : 'today', id};
+}
+const go = (name, id) => { location.hash = '#/' + name + (id ? '/' + id : ''); };
+window.addEventListener('hashchange', () => { ui.editing = null; closeModal(); closeMenu(); render(); window.scrollTo(0,0); });
+
+let navHtml = '';
+function renderNav(dueCount){
+  if(dueCount === undefined){ const n = nowStr(); dueCount = reminders().filter(r=>r.due<=n).length; }
+  const r = route(), cur = r.name === 'client' ? (PIPELINE.includes(client(r.id)?.status) || client(r.id)?.status==='Lost' ? 'leads' : 'clients') : r.name;
+  let html = '', grp = '';
+  VIEWS.forEach(([k,t,g]) => {
+    if(g !== grp){ html += `<div class="navgroup">${g}</div>`; grp = g; }
+    html += `<a href="#/${k}" class="${cur===k?'on':''}" ${cur===k?'aria-current="page"':''}><span class="nl"><span class="ni" style="--c:var(--c-${AREA[k][1]})">${ic(AREA[k][0])}</span><span>${t}</span></span>${k==='today'&&dueCount?`<span class="count"><span aria-hidden="true">${dueCount}</span><span class="sr">,${dueCount} due now</span></span>`:''}</a>`;
+  });
+  if(html !== navHtml){ $('#nav').innerHTML = navHtml = html; }   // leave focus alone when nothing changed
+  $('#spaceName').textContent = db.settings.spaceName || 'Coworking tracker';
+}
+// Progress bars grow from where they were instead of jumping when the view redraws.
+function keepBars(paint){
+  const was = {}; document.querySelectorAll('.prog i[data-k]').forEach(i => was[i.dataset.k] = i.style.width);
+  paint();
+  document.querySelectorAll('.prog i[data-k]').forEach(i => {
+    const to = i.style.width; if(was[i.dataset.k] === undefined || was[i.dataset.k] === to) return;
+    i.style.transition = 'none'; i.style.width = was[i.dataset.k]; i.offsetWidth; i.style.transition = ''; i.style.width = to;
+  });
+}
+function render(){
+  const r = route();
+  renderNav();
+  keepBars(() => { $('#main').innerHTML = ({today:viewToday, leads:viewLeads, clients:viewClients, calls:viewCalls, docs:viewDocs, rent:viewRent, settings:viewSettings, client:()=>viewClient(r.id)})[r.name](); });
+  const f = $('#cf'); if(f) applyVis(f);
+}
+// re-render without losing an unsaved client form
+function refresh(){
+  const r = route();
+  if(r.name === 'client' && $('#cside')){ const c = client(r.id); if(c){ keepBars(() => { $('#cside').innerHTML = clientSide(c); }); renderNav(); return; } }
+  render();
+}
+
+// ===================== shared row renderers =====================
+// One colour meaning per status everywhere: green = paying member, amber = needs a push, red = lost.
+const STATUS_CLS = {'Lead':'lead','Visited':'acc', 'Negotiating':'warn', 'Active':'pos', 'Notice period':'warn', 'Left':'', 'Lost':'neg'};
+const statusPill = s => `<span class="pill ${STATUS_CLS[s]||''}">${esc(s)}</span>`;
+// Purposes stay neutral; only sales follow-ups (the lead pipeline) carry the accent.
+const purposePill = p => `<span class="pill ${p===SALES?'lead':''}">${esc(p)}</span>`;
+function agendaRow(r){
+  const now = nowStr(), late = r.due <= now, d = r.due.slice(0,10), t = today(), tm = toLocal(addDays(new Date(),1)).slice(0,10);
+  const when = d === t || d === tm ? fmtTime(r.due) : `${fmtDay(r.due)}<small>${fmtTime(r.due)}</small>`;
+  const titleHtml = r.clientId ? `<a class="name" href="#/client/${r.clientId}">${esc(r.title)}</a>` : esc(r.title);
+  const rems = findItem(r.kind, r.id)?.remarks || [], rem = rems[rems.length-1];
+  return `<div class="row" data-row="${r.kind}:${r.id}">
+    <div class="r-time ${late?'late':''}">${when}${late?'<span class="sr">, overdue</span>':''}</div>
+    <div class="r-main"><div class="r-title">${titleHtml}</div><div class="r-sub">${purposePill(r.purpose)}${r.sub?`<span>${esc(r.sub)}</span>`:''}</div>
+      ${rem?`<button class="r-rem" data-act="remark" data-kind="${r.kind}" data-id="${r.id}" title="See or add remarks">${ic('note')}<span>${esc(rem.text)}</span><small>${rem.at.slice(0,10)===today()?fmtTime(rem.at):fmtDay(rem.at)}${rems.length>1?` · ${rems.length} remarks`:''}</small></button>`:''}</div>
+    <div class="r-acts">
+      ${r.phone?`<a class="btn icon sm" href="tel:${esc(r.phone)}" title="Call ${esc(r.phone)}" aria-label="Call ${esc(r.title)}">${ic('phone')}</a><a class="btn icon sm" target="_blank" href="${waLink(r.phone)}" title="WhatsApp" aria-label="WhatsApp ${esc(r.title)}">${ic('chat')}</a>`:''}
+      <button class="btn icon sm" data-act="remark" data-kind="${r.kind}" data-id="${r.id}" title="Add a remark" aria-label="Add a remark: ${esc(r.title)}">${ic('note')}</button>
+      <button class="btn sm" data-act="done" data-kind="${r.kind}" data-id="${r.id}" aria-label="Done: ${esc(r.title)}">${ic('check')} Done</button>
+      <button class="btn icon sm ghost" data-act="rowMenu" data-kind="${r.kind}" data-id="${r.id}" aria-label="More actions for ${esc(r.title)}" aria-haspopup="menu" aria-expanded="false">${ic('more')}</button>
+    </div></div>`;
+}
+function groupRows(list){
+  const t = today(), now = nowStr(), tm = toLocal(addDays(new Date(),1)).slice(0,10), groups = {};
+  list.forEach(r => { const d = r.due.slice(0,10), g = r.due <= now ? 'Overdue' : d === t ? 'Later today' : d === tm ? 'Tomorrow' : 'Later'; (groups[g] ||= []).push(r); });
+  return ['Overdue','Later today','Tomorrow','Later'].filter(g=>groups[g]).map(g => `<div class="grp g-${{'Overdue':'overdue','Later today':'today','Tomorrow':'tomorrow','Later':'later'}[g]}">${g} · ${groups[g].length}</div>${groups[g].map(agendaRow).join('')}`).join('');
+}
+function attentionList(items){
+  if(!items.length) return '<div class="empty">Nothing needs attention. Renewals, unpaid rent, missing documents and leads without a follow-up show up here automatically.</div>';
+  // one entry per person, most urgent person first
+  const people = new Map();
+  items.forEach(a => { if(!people.has(a.c.id)) people.set(a.c.id, []); people.get(a.c.id).push(a); });
+  return [...people.values()].map(list => `<div class="att"><a href="#/client/${list[0].c.id}">${esc(list[0].c.name)}</a>
+    ${list.map(a => { const acts = a.acts.filter(Boolean);
+      return `<div class="att-i"><span class="pill ${a.sev}">${esc(a.label)}</span><div class="t">${esc(a.text)}${a.note?`<br>${esc(a.note)}`:''}
+        ${acts.length?`<div class="acts">${acts.map(([l,attrs])=>`<button class="btn sm" ${attrs}>${esc(l)}</button>`).join('')}</div>`:''}</div></div>`; }).join('')}</div>`).join('');
+}
+
+// ===================== views =====================
+function notices(){
+  const s = db.settings, out = [];
+  const age = s.lastBackup ? daysBetween(s.lastBackup, today()) : null;
+  if(db.clients.length && (age === null || age >= 7))
+    out.push(`<div class="notice">${age===null?'Your data has never been backed up.':`Last backup was ${age} days ago.`} It is stored only in this browser.<button class="btn sm" data-act="export">Back up now</button></div>`);
+  if('Notification' in window && Notification.permission === 'default' && !db.settings.notifAsked)
+    out.push(`<div class="notice">Turn on desktop notifications so call reminders appear even when this window is behind others.<button class="btn sm" data-act="perm">Turn on</button><button class="btn sm ghost" style="margin-left:0" data-act="permLater">Not now</button></div>`);
+  return out.join('');
+}
+
+function viewToday(){
+  const now = nowStr(), t = today(), all = reminders();
+  const todayList = all.filter(r => r.due.slice(0,10) <= t);
+  const overdue = all.filter(r => r.due <= now).length;   // same rule as the red badge and red times
+  const week = all.filter(r => { const d = r.due.slice(0,10); return d > t && d <= toLocal(addDays(new Date(),7)).slice(0,10); });
+  const act = db.clients.filter(c => CURRENT.includes(c.status));
+  const leads = db.clients.filter(c => PIPELINE.includes(c.status));
+  const seats = act.reduce((s,c)=>s+Number(c.seats||0),0), total = Number(db.settings.totalSeats||0);
+  const rentDue = act.filter(c=>Number(c.rent)), rentTotal = rentDue.reduce((s,c)=>s+Number(c.rent),0), rentIn = rentDue.filter(c=>c.payments[monthKey()]).reduce((s,c)=>s+Number(c.rent),0);
+  const att = attention();
+  const summary = todayList.length ? `${plural(todayList.length,'thing')} to do${overdue?`, ${overdue} overdue`:''}` : 'Nothing scheduled';
+  const pct = (a,b) => b ? Math.min(100, a/b*100) : 0;
+  return `${notices()}
+  <div class="ph"><div><h1>Today</h1><div class="sub">${new Date().toLocaleDateString(undefined,{weekday:'long',day:'numeric',month:'long'})} · <span class="${overdue?'late':''}">${summary}</span></div></div>
+    <div class="acts"><button class="btn" data-act="newFu">Schedule call</button><button class="btn primary" data-act="newClient">New lead</button></div></div>
+  <div class="cols">
+    <div>
+      <section class="panel"><div class="panel-h">${hic('phone','calls')}<h2>Calls and tasks</h2></div>
+        <div class="panel-b flush">${todayList.length ? groupRows(todayList) : `<div class="empty"><b>You're clear for today.</b> Add a lead with “New lead” and its first call is scheduled for you.</div>`}</div></section>
+      <section class="panel"><div class="panel-h">${hic('cal','today')}<h2>Coming up</h2><a class="meta" href="#/calls">View all</a></div>
+        <div class="panel-b flush">${week.length ? groupRows(week.slice(0,8)) : '<div class="empty">Nothing scheduled this week.</div>'}</div></section>
+    </div>
+    <div>
+      <section class="panel"><div class="panel-h">${hic('alert','alert')}<h2>Needs attention</h2><span class="meta">${att.length||''}</span></div><div class="panel-b" style="padding-top:4px;padding-bottom:4px">${attentionList(att)}</div></section>
+      <section class="panel"><div class="panel-h">${hic('chart','today')}<h2>${monthLabel(monthKey(),true)}</h2></div><div class="panel-b" style="padding-top:4px;padding-bottom:4px">
+        <div class="stat" style="--c:var(--c-leads)"><span>Open leads</span><b>${leads.length}</b></div>
+        <div class="stat wrap" style="--c:var(--c-clients)"><span>Seats occupied</span><b>${seats}${total?`<small> of ${total}</small>`:''}</b>${total?`<div class="prog" aria-hidden="true"><i data-k="seats" style="width:${pct(seats,total)}%"></i></div>`:''}</div>
+        <div class="stat wrap" style="--c:var(--c-rent)"><span>Rent received</span><b>${money(rentIn)}<small> of ${money(rentTotal)}</small></b>${rentTotal?`<div class="prog" aria-hidden="true"><i data-k="rent" style="width:${pct(rentIn,rentTotal)}%"></i></div>`:''}</div>
+      </div></section>
+    </div>
+  </div>`;
+}
+
+function searchMatch(c){ const q = ui.q.trim().toLowerCase(); return !q || [c.name,c.company,c.phone,c.email,c.plan,c.seatNo,c.notes].join(' ').toLowerCase().includes(q); }
+function searchBox(){ return `<input type="search" id="q" placeholder="Search name, company, phone" value="${esc(ui.q)}" aria-label="Search">`; }
+function seg(key, opts, label){ return `<div class="seg" role="group" aria-label="${esc(label)}">${opts.map(([v,t])=>`<button aria-pressed="${ui[key]===v}" class="${ui[key]===v?'on':''}" data-act="seg" data-k="${key}" data-v="${esc(v)}">${esc(t)}</button>`).join('')}</div>`; }
+
+function viewLeads(){
+  const stage = ui.leadStage;
+  const list = db.clients.filter(c => (stage==='open' ? PIPELINE.includes(c.status) : c.status===stage) && searchMatch(c))
+    .sort((a,b) => { const fa=openFus(a.id)[0], fb=openFus(b.id)[0]; return (fa?fa.due:'0') < (fb?fb.due:'0') ? -1 : 1; });
+  const counts = s => db.clients.filter(c => s==='open' ? PIPELINE.includes(c.status) : c.status===s).length;
+  const src = {}; db.clients.forEach(c => src[c.source||'Other'] = (src[c.source||'Other']||0)+1);
+  const srcRows = Object.entries(src).sort((a,b)=>b[1]-a[1]);
+  const won = db.clients.filter(c=>MEMBER.includes(c.status)).length, lost = db.clients.filter(c=>c.status==='Lost').length;
+  const reasons = {}; db.clients.filter(c=>c.status==='Lost').forEach(c=>reasons[c.lostReason||'Not recorded']=(reasons[c.lostReason||'Not recorded']||0)+1);
+  const lastContact = c => { const l = [...c.log].reverse().find(x=>!/^Status changed|^Added/.test(x.text)); return l ? l.at : ''; };
+  const barList = rows => rows.map(([k,v],i)=>`<div class="barrow"><span>${esc(k)}</span><div><div class="bar${i?' soft':''}" style="width:${v/Math.max(1,...rows.map(r=>r[1]))*100}%"></div></div><span class="num">${v}</span></div>`).join('');
+  return `<div class="ph"><div><h1>Leads</h1><div class="sub">People who enquired but haven't joined yet. Every open lead should have a next follow-up.</div></div>
+    <div class="acts"><button class="btn primary" data-act="newClient">New lead</button></div></div>
+  <section class="panel">
+    <div class="panel-h" style="flex-wrap:wrap">${seg('leadStage',[['open',`All open (${counts('open')})`],['Lead',`New (${counts('Lead')})`],['Visited',`Visited (${counts('Visited')})`],['Negotiating',`Negotiating (${counts('Negotiating')})`],['Lost',`Lost (${counts('Lost')})`]],'Lead stage')}<span style="margin-left:auto">${searchBox()}</span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Name</th><th>Stage</th><th>Interested in</th><th>Found you via</th><th>Last contact</th><th>${stage==='Lost'?'Reason':'Next follow-up'}</th></tr></thead>
+      <tbody>${list.map(c => { const f = openFus(c.id)[0], lc = lastContact(c), late = f && f.due <= nowStr();
+        return `<tr class="link" data-act="open" data-id="${c.id}">
+          <td><a class="name" href="#/client/${c.id}">${esc(c.name)}</a><div class="s">${esc(c.company||c.phone||'')}</div></td>
+          <td>${statusPill(c.status)}</td>
+          <td>${esc(c.plan||'')}${Number(c.seats)>1?`<div class="s">${esc(c.seats)} seats</div>`:''}</td>
+          <td>${esc(c.source||'')||'<span class="dash">—</span>'}</td>
+          <td>${lc ? relDays(lc) : '<span class="dash">—</span>'}</td>
+          <td>${stage==='Lost' ? (esc(c.lostReason)||'<span class="dash">—</span>') : f ? `<span class="${late?'late':''}">${fmtDT(f.due)}</span><div class="s">${esc(f.type)}</div>` :
+            `<button class="btn sm" data-act="newFu" data-client="${c.id}" data-purpose="${SALES}">Schedule</button>`}</td></tr>`; }).join('')
+        || `<tr><td colspan="6"><div class="empty">${ui.q?'No leads match your search.':stage==='open'?'No open leads. When someone calls or walks in, add them with “New lead”.':'No leads at this stage.'}</div></td></tr>`}</tbody>
+    </table></div>
+  </section>
+  ${srcRows.length ? `<section class="panel"><div class="panel-h">${hic('chart','leads')}<h2>What's working</h2><span class="meta">all time</span></div>
+    <div class="panel-b cols even" style="gap:40px">
+      <div><div class="hint" style="margin-bottom:8px">Where enquiries come from</div>${barList(srcRows)}</div>
+      <div><div class="hint" style="margin-bottom:8px">Conversion</div>
+        ${won+lost ? `<div style="font-size:24px;line-height:32px;font-weight:600">${Math.round(won/(won+lost)*100)}%</div><div class="hint">${won} joined, ${lost} lost</div>
+          ${lost?`<div class="hint" style="margin:16px 0 8px">Why leads didn't join</div>${barList(Object.entries(reasons).sort((a,b)=>b[1]-a[1]))}`:''}`
+          : '<div class="hint">Shows once leads join or are marked lost.</div>'}</div>
+    </div></section>` : ''}`;
+}
+
+function viewClients(){
+  const tab = ui.clientTab;
+  const list = db.clients.filter(c => c.status===tab && searchMatch(c)).sort((a,b)=>a.name.localeCompare(b.name));
+  const n = s => db.clients.filter(c=>c.status===s).length;
+  return `<div class="ph"><div><h1>Clients</h1><div class="sub">People using your space. Their calls are for renewals, rent and documents.</div></div>
+    <div class="acts"><button class="btn" data-act="csv">Export CSV</button><button class="btn primary" data-act="newClient" data-status="Active">Add client</button></div></div>
+  <section class="panel">
+    <div class="panel-h" style="flex-wrap:wrap">${seg('clientTab',[['Active',`Active (${n('Active')})`],['Notice period',`On notice (${n('Notice period')})`],['Left',`Left (${n('Left')})`]],'Client status')}<span style="margin-left:auto">${searchBox()}</span></div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Name</th><th>Plan</th><th class="num">Seats</th><th class="num">Rent</th><th>Agreement ends</th><th>Documents</th><th>${monthLabel(monthKey())} rent</th></tr></thead>
+      <tbody>${list.map(c => { const dn = c.docs.filter(d=>d.collected).length, rs = rentState(c), d = c.endDate ? daysBetween(today(), c.endDate) : null;
+        return `<tr class="link" data-act="open" data-id="${c.id}">
+          <td><a class="name" href="#/client/${c.id}">${esc(c.name)}</a><div class="s">${esc(c.company||c.phone||'')}</div></td>
+          <td>${esc(c.plan||'')}${c.seatNo?`<div class="s">Seat ${esc(c.seatNo)}</div>`:''}</td>
+          <td class="num">${esc(c.seats)||'<span class="dash">—</span>'}</td>
+          <td class="num">${Number(c.rent)?money(c.rent):'<span class="dash">—</span>'}</td>
+          <td>${c.endDate?`${fmtD(c.endDate)}<div class="s ${d!==null&&d<=30?'late':''}">${relDays(c.endDate)}</div>`:'<span class="dash">—</span>'}</td>
+          <td>${c.docs.length?(dn===c.docs.length?'<span class="pill pos">Complete</span>':`<span class="pill warn">${dn} of ${c.docs.length}</span>`):'<span class="dash">—</span>'}</td>
+          <td>${rs==='paid'?'<span class="pill pos">Paid</span>':rs==='overdue'?'<span class="pill neg">Due</span>':rs==='upcoming'?`<span class="s">Due ${ordinal(Number(c.rentDueDay||1))}</span>`:'<span class="dash">—</span>'}</td></tr>`; }).join('')
+        || `<tr><td colspan="7"><div class="empty">${ui.q?'No clients match your search.':tab==='Active'?'No active clients yet. When a lead joins, change their status to Active, or use “Add client”.':'Nobody here.'}</div></td></tr>`}</tbody>
+    </table></div>
+  </section>`;
+}
+
+function viewCalls(){
+  const f = ui.callsFilter;
+  const match = r => f==='all' || (f==='sales' && r.kind==='fu' && r.purpose===SALES) || (f==='client' && r.kind==='fu' && r.purpose!==SALES) || (f==='tasks' && r.kind==='task');
+  const open = reminders().filter(match);
+  const hist = [...db.followups.filter(x=>x.done).map(x=>({...x,kind:'fu'})), ...db.adLog.map(x=>({kind:'ad',doneAt:x.at,title:x.title}))]
+    .filter(x => f==='all' || (f==='sales'&&x.kind==='fu'&&x.purpose===SALES) || (f==='client'&&x.kind==='fu'&&x.purpose!==SALES) || (f==='tasks'&&x.kind==='ad'))
+    .sort((a,b)=>(b.doneAt||'')<(a.doneAt||'')?-1:1).slice(0,200);
+  return `<div class="ph"><div><h1>Calls and tasks</h1><div class="sub">Repeating tasks such as posting ads move to their next date when you mark them done.</div></div>
+    <div class="acts"><button class="btn" data-act="newTask">Add task</button><button class="btn primary" data-act="newFu">Schedule call</button></div></div>
+  <div class="toolbar">${seg('callsTab',[['open',`Open (${reminders().length})`],['history','History']],'Open or done')}
+    ${seg('callsFilter',[['all','All'],['sales','Lead follow-ups'],['client','Client calls'],['tasks','Tasks and ads']],'Show')}</div>
+  <section class="panel">${ui.callsTab==='open'
+    ? `<div class="panel-b flush">${open.length ? groupRows(open) : '<div class="empty">Nothing open here.</div>'}</div>`
+    : `<div class="tablewrap"><table><thead><tr><th>Done</th><th>Who / what</th><th>Purpose</th><th>Outcome</th></tr></thead><tbody>
+      ${hist.map(x => { const c = client(x.clientId);
+        return `<tr><td style="white-space:nowrap">${fmtDT(x.doneAt)}</td><td>${x.kind==='ad'?esc(x.title):c?`<a href="#/client/${c.id}">${esc(c.name)}</a>`:esc(x.who||'—')}<div class="s">${x.kind==='ad'?'Ad posted':esc(x.type||'')}</div></td>
+        <td>${x.kind==='ad'?'<span class="pill">Post ad</span>':purposePill(x.purpose)}</td><td>${esc(x.outcome||'')||'<span class="dash">—</span>'}</td></tr>`; }).join('')
+      || '<tr><td colspan="4"><div class="empty">Completed calls and posted ads are listed here.</div></td></tr>'}</tbody></table></div>`}
+  </section>`;
+}
+
+function viewDocs(){
+  const list = db.clients.filter(c => !['Lost'].includes(c.status) && c.docs.some(d=>!d.collected)).sort((a,b)=>STATUSES.indexOf(a.status)-STATUSES.indexOf(b.status));
+  const pending = list.reduce((s,c)=>s+c.docs.filter(d=>!d.collected).length,0);
+  return `<div class="ph"><div><h1>Documents</h1><div class="sub">${pending ? `${plural(pending,'document')} to collect from ${plural(list.length,'client')}. Tick each one as you receive it; the date is saved.` : 'Every client file is complete.'}</div></div></div>
+  ${list.map(c => { const dn = c.docs.filter(d=>d.collected).length;
+    return `<section class="panel"><div class="panel-h"><h2><a class="name" href="#/client/${c.id}">${esc(c.name)}</a></h2>${statusPill(c.status)}
+      <span class="meta">${dn} of ${c.docs.length} collected</span>${c.phone?`<button class="btn sm" data-act="wa" data-id="${c.id}" data-tpl="docs">${ic('chat')} Ask on WhatsApp</button>`:''}</div>
+      <div class="panel-b" style="padding-top:4px;padding-bottom:4px">${docList(c)}</div></section>`; }).join('')
+    || `<section class="panel"><div class="panel-b"><div class="empty" style="padding:0">Nothing pending. New clients get the checklist from Settings automatically.</div></div></section>`}`;
+}
+function docList(c){
+  return c.docs.map((d,i) => `<div class="doc ${d.collected?'ok':''}"><label><input type="checkbox" data-act="doc" data-id="${c.id}" data-i="${i}" ${d.collected?'checked':''}><span class="n">${esc(d.name)}</span></label>
+    ${d.collected?`<span class="d">${fmtD(d.date)}</span>`:''}</div>`).join('');
+}
+
+function last6(offset=5){ return [...Array(6)].map((_,i)=>{ const d = new Date(); d.setDate(1); d.setMonth(d.getMonth()-offset+i); return monthKey(d); }); }
+// One rent toggle used on both the Rent page and the client page.
+function payButton(c, m){
+  const off = (c.startDate && c.startDate.slice(0,7) > m) || m > monthKey(), paid = !!c.payments[m];
+  const due = !paid && !off && arrears(c).includes(m);
+  return `<button class="pay ${paid?'paid':due?'due':''}" data-act="pay" data-id="${c.id}" data-m="${m}" ${off?'disabled':''} aria-pressed="${paid}" aria-label="${esc(c.name)}, ${monthLabel(m,true)}: ${paid?'paid':off?'not applicable':due?'overdue':'unpaid'}">${paid?'Paid':off?'—':due?'Due':'Unpaid'}</button>`;
+}
+function viewRent(){
+  const months = last6(), act = db.clients.filter(c => CURRENT.includes(c.status) && Number(c.rent)).sort((a,b)=>a.name.localeCompare(b.name));
+  const mk = monthKey(), total = act.reduce((s,c)=>s+Number(c.rent),0), got = act.filter(c=>c.payments[mk]).reduce((s,c)=>s+Number(c.rent),0);
+  return `<div class="ph"><div><h1>Rent</h1><div class="sub">${act.length ? `${money(got)} of ${money(total)} received for ${monthLabel(mk,true)}. Click a month to mark it paid; red months are overdue.` : 'Clients with a monthly rent appear here.'}</div></div></div>
+  <section class="panel"><div class="tablewrap"><table>
+    <thead><tr><th>Client</th><th class="num">Rent</th><th>Due</th>${months.map(m=>`<th style="text-align:center">${monthLabel(m)}</th>`).join('')}</tr></thead>
+    <tbody>${act.map(c=>`<tr><td><a class="name" href="#/client/${c.id}">${esc(c.name)}</a></td><td class="num">${money(c.rent)}</td><td>${ordinal(Number(c.rentDueDay||1))}</td>
+      ${months.map(m=>`<td class="paycell">${payButton(c,m)}</td>`).join('')}</tr>`).join('')
+      || `<tr><td colspan="${months.length+3}"><div class="empty">Add a monthly rent to an active client to track payments here.</div></td></tr>`}</tbody>
+  </table></div></section>`;
+}
+
+function viewSettings(){
+  const s = db.settings, perm = 'Notification' in window ? Notification.permission : 'unsupported';
+  return `<div class="ph"><div><h1>Settings</h1></div></div>
+  <div class="cols even">
+    <section class="panel"><div class="panel-h">${hic('gear','settings')}<h2>Your space</h2></div><div class="panel-b">
+      <form id="sf" class="form" onsubmit="return false">
+        ${fld('Space name','spaceName',s.spaceName,'text','placeholder="e.g. Dexterity Cowork"')}
+        ${fld('Total seats','totalSeats',s.totalSeats||'','number','min="0"')}
+        ${fld('Currency symbol','currency',s.currency)}
+        <label>Phone country code<input name="countryCode" value="${esc(s.countryCode)}" inputmode="numeric" placeholder="91"><span class="hint">Added to 10-digit numbers for WhatsApp.</span></label>
+        <label class="wide">Document checklist for new clients<textarea name="docTemplate" rows="8">${esc(s.docTemplate.join('\n'))}</textarea><span class="hint">One per line.</span></label>
+        <label class="wide">Plans you offer<textarea name="plans" rows="5">${esc(s.plans.join('\n'))}</textarea><span class="hint">One per line.</span></label>
+        <label class="check wide"><input type="checkbox" name="sound" ${s.sound?'checked':''}> Play a sound when a reminder is due</label>
+        <details class="more wide"><summary>WhatsApp message templates</summary>
+          <div class="form">
+            <div class="hint wide">You can use {name} {space} {amount} {month} {docs} {date} {plan}</div>
+            ${[['lead','New lead follow-up'],['rent','Rent reminder'],['docs','Pending documents'],['renewal','Renewal'],['birthday','Birthday']].map(([k,l])=>`<label class="wide">${l}<textarea name="tpl_${k}" rows="2">${esc(s.templates[k])}</textarea></label>`).join('')}
+          </div></details>
+      </form>
+      <div class="formfoot"><span class="sp"></span><button class="btn primary" data-act="saveSettings">Save settings</button></div>
+    </div></section>
+    <div>
+      <section class="panel"><div class="panel-h">${hic('users','clients')}<h2>Phone and sync</h2></div><div class="panel-b">
+        ${sync.cfg.hosted
+          ? `<p style="margin-top:0">This copy opens from your Google link and stays in sync with your other devices automatically.</p><p id="syncInfo" style="color:var(--ink2)">${syncInfoHtml()}</p>
+             <button class="btn" data-act="syncNow">Sync now</button>`
+          : syncOn()
+          ? `<p style="margin-top:0">Connected to your Google Sheet. Changes on this computer and your phone are shared within a minute.</p><p id="syncInfo" style="color:var(--ink2)">${syncInfoHtml()}</p>
+             <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="syncNow">Sync now</button><button class="btn" data-act="copySyncLink">Copy phone link</button><button class="btn ghost danger" data-act="syncOff">Disconnect</button></div>`
+          : `<p style="margin-top:0;color:var(--ink2)">Keep this computer and your Android phone on the same data, stored in your own Google Sheet. Paste the SpaceDesk link from the setup steps.</p>
+             <div style="display:flex;gap:8px"><input id="syncLink" aria-label="SpaceDesk link" placeholder="https:\/\/script.google.com/macros/s/…/exec?key=…"><button class="btn primary" data-act="syncConnect">Connect</button></div>`}
+      </div></section>
+      <section class="panel"><div class="panel-h">${hic('clock','calls')}<h2>Reminders</h2></div><div class="panel-b">
+        <p style="margin-top:0">Desktop notifications: <b>${{granted:'On',denied:'Blocked',default:'Off',unsupported:'Not supported'}[perm]}</b></p>
+        <p style="color:var(--ink2)">Reminders appear while SpaceDesk is open, even when its window is behind others. It opens automatically when Windows starts. To get reminders on your phone, use “Add to calendar” from a reminder's menu.</p>
+        ${perm==='denied'?'<p style="color:var(--ink2)">Notifications were blocked. Allow them from the site permissions (padlock icon) in Edge.</p>':''}
+        <div style="display:flex;gap:8px">${perm==='default'?'<button class="btn" data-act="perm">Turn on notifications</button>':''}<button class="btn" data-act="testReminder">Send a test reminder</button></div>
+      </div></section>
+      <section class="panel"><div class="panel-h">${hic('file','today')}<h2>Backup</h2></div><div class="panel-b">
+        <p style="margin-top:0;color:var(--ink2)">Your data lives in this browser on this computer. Clearing browsing data erases it, so export a backup every week and keep it on Google Drive.</p>
+        <p>Last backup: <b>${s.lastBackup?fmtD(s.lastBackup):'never'}</b></p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" data-act="export">Export backup</button><button class="btn" data-act="import">Restore from backup</button><button class="btn" data-act="csv">Export clients as CSV</button></div>
+      </div></section>
+      <section class="panel"><div class="panel-h">${hic('alert','alert')}<h2>Erase data</h2></div><div class="panel-b">
+        <p style="margin-top:0;color:var(--ink2)">Deletes every client, call and task in this browser. Export a backup first.${syncOn() && !sync.cfg.hosted ? ' This computer is disconnected from sync first, so the Google Sheet copy is kept.' : ''}</p>
+        <button class="btn danger" data-act="reset">Erase all data</button>
+      </div></section>
+    </div>
+  </div>`;
+}
+
+// ===================== client page =====================
+function clientFields(c, isNew){
+  const s = db.settings;
+  return `
+    <div class="fsec">Contact</div>
+    ${fld('Name','name',c.name,'text','required autocomplete="off"')}
+    ${fld('Company','company',c.company)}
+    ${fld('Phone','phone',c.phone,'tel')}
+    ${fld('Email','email',c.email,'email')}
+    <div class="fsec">Status and plan</div>
+    ${sel('Status','status',c.status,STATUSES)}
+    ${sel('How they found you','source',c.source,withCurrent(SOURCES,c.source))}
+    ${sel('Plan','plan',c.plan,withCurrent(s.plans,c.plan))}
+    ${fld('Seats','seats',c.seats,'number','min="0"')}
+    ${fld('Requirement or budget','requirement',c.requirement,'text','','pipeline lost','wide')}
+    ${sel('Why they did not join','lostReason',c.lostReason||'',[['','Select a reason'],...LOST_REASONS],'lost')}
+    <div class="fsec" data-show="member">Agreement and rent</div>
+    ${fld('Seat or cabin number','seatNo',c.seatNo,'text','','member')}
+    ${fld(`Monthly rent (${esc(s.currency)})`,'rent',c.rent,'number','min="0"','member')}
+    ${fld('Rent due on day','rentDueDay',c.rentDueDay||(isNew?5:''),'number','min="1" max="31"','member')}
+    ${fld(`Security deposit (${esc(s.currency)})`,'deposit',c.deposit,'number','min="0"','member')}
+    ${fld('Start date','startDate',c.startDate,'date','','member')}
+    ${fld('Agreement ends','endDate',c.endDate,'date','','member')}
+    <label class="check wide" data-show="left"><input type="checkbox" name="depositRefunded" ${c.depositRefunded?'checked':''}> Security deposit refunded</label>
+    <div class="fsec">Other</div>
+    ${isNew ? fld('First follow-up','firstFu',atHour(1,11),'datetime-local','','pipeline') : ''}
+    ${fld('Birthday','birthday',c.birthday,'date')}
+    <label class="wide">Notes<textarea name="notes" rows="3">${esc(c.notes||'')}</textarea></label>`;
+}
+function applyVis(form){
+  const s = form.elements.status.value;
+  const on = {pipeline:PIPELINE.includes(s), member:MEMBER.includes(s), lost:s==='Lost', left:s==='Left'};
+  form.querySelectorAll('[data-show]').forEach(el => {
+    const show = el.dataset.show.split(' ').some(k => on[k]);
+    el.hidden = !show; el.querySelectorAll('input,select,textarea').forEach(i => i.disabled = !show);
+  });
+}
+function readClientForm(id, c){
+  const form = document.getElementById(id);
+  if(!form.reportValidity()) return null;
+  const d = formData(id);            // disabled (hidden) fields are left out
+  const status = d.status, first = d.firstFu; delete d.status; delete d.firstFu;
+  if(form.elements.depositRefunded && !form.elements.depositRefunded.disabled) d.depositRefunded = form.elements.depositRefunded.checked;
+  Object.assign(c, d, {name: d.name.trim()});
+  return {status, first};
+}
+
+function viewClient(id){
+  const c = client(id);
+  if(!c) return `<div class="empty">This client no longer exists. <a href="#/clients">Back to clients</a></div>`;
+  const isLead = PIPELINE.includes(c.status) || c.status==='Lost';
+  return `<a class="crumb" href="#/${isLead?'leads':'clients'}">${ic('back')} ${isLead?'Leads':'Clients'}</a>
+  <div class="ph"><div><h1>${esc(c.name)}</h1><div class="sub" style="display:flex;gap:8px;align-items:center">${statusPill(c.status)}<span>${[c.company, c.plan, c.seatNo&&'Seat '+c.seatNo].filter(Boolean).map(esc).join(' · ')}</span></div></div>
+    <div class="acts">
+      ${c.phone?`<a class="btn" href="tel:${esc(c.phone)}">${ic('phone')} ${esc(c.phone)}</a><a class="btn" target="_blank" href="${waLink(c.phone)}">${ic('chat')} WhatsApp</a>`:''}
+      ${c.email?`<a class="btn icon" href="mailto:${esc(c.email)}" aria-label="Email" title="${esc(c.email)}">${ic('mail')}</a>`:''}
+      <button class="btn" data-act="logCall" data-id="${c.id}">Log a call</button>
+      <button class="btn primary" data-act="newFu" data-client="${c.id}">Schedule call</button>
+    </div></div>
+  <div class="cols even">
+    <div id="cside">${clientSide(c)}</div>
+    ${ui.editing === c.id
+      ? `<section class="panel"><div class="panel-h">${hic('user','clients')}<h2>Edit details</h2></div><div class="panel-b">
+          <form id="cf" class="form" onsubmit="return false">${clientFields(c,false)}</form>
+          <div class="formfoot"><button class="btn ghost danger" data-act="delClient" data-id="${c.id}">Delete</button><span class="sp"></span><button class="btn" data-act="cancelEdit">Cancel</button><button class="btn primary" data-act="saveClient" data-id="${c.id}">Save changes</button></div>
+        </div></section>`
+      : `<section class="panel"><div class="panel-h">${hic('user','clients')}<h2>Details</h2><button class="btn sm" style="margin-left:auto" data-act="editClient" data-id="${c.id}">Edit details</button></div>
+          <div class="panel-b">${clientSummary(c)}</div></section>`}
+  </div>`;
+}
+// Read-only view: only what's filled in, grouped the same way as the form.
+function clientSummary(c){
+  const member = MEMBER.includes(c.status), cur = db.settings.currency;
+  const sec = (title, rows) => { rows = rows.filter(r => r[1] !== '' && r[1] != null && r[1] !== false);
+    return rows.length ? `<div class="fsec">${title}</div>${rows.map(([k,v,cls]) => `<dt>${k}</dt><dd class="${cls||''}">${v}</dd>`).join('')}` : ''; };
+  const link = (href, text) => `<a href="${href}">${esc(text)}</a>`;
+  const html = [
+    sec('Contact', [['Company', esc(c.company||'')], ['Phone', c.phone ? link('tel:'+esc(c.phone), c.phone) : ''], ['Email', c.email ? link('mailto:'+esc(c.email), c.email) : '']]),
+    sec('Status and plan', [['Status', statusPill(c.status)], ['Found you via', esc(c.source||'')], ['Plan', esc(c.plan||'')], ['Seats', esc(c.seats||'')],
+      ['Requirement', !member ? esc(c.requirement||'') : ''], ['Why they did not join', c.status==='Lost' ? esc(c.lostReason||'Not recorded') : '']]),
+    member ? sec('Agreement and rent', [['Seat or cabin', esc(c.seatNo||'')], ['Monthly rent', Number(c.rent) ? `${money(c.rent)}, due on the ${ordinal(Number(c.rentDueDay||1))}` : ''],
+      ['Security deposit', Number(c.deposit) ? money(c.deposit) + (c.status==='Left' ? (c.depositRefunded ? ' · refunded' : ' · not refunded yet') : '') : ''],
+      ['Started', fmtD(c.startDate)], ['Agreement ends', c.endDate ? `${fmtD(c.endDate)} <span class="hint">${relDays(c.endDate)}</span>` : '']]) : '',
+    sec('Other', [['Birthday', c.birthday ? new Date(c.birthday+'T00:00').toLocaleDateString(undefined,{day:'numeric',month:'long'}) : ''], ['Notes', esc(c.notes||''), 'note']])
+  ].join('');
+  return `<dl class="kv">${html}</dl>`;
+}
+function clientSide(c){
+  const fus = openFus(c.id), dn = c.docs.filter(d=>d.collected).length, member = MEMBER.includes(c.status);
+  return `
+  <section class="panel"><div class="panel-h">${hic('phone','calls')}<h2>Upcoming calls</h2><span class="meta">${fus.length||''}</span></div>
+    <div class="panel-b flush">${fus.length ? fus.map(f=>agendaRow({kind:'fu',id:f.id,due:f.due,purpose:f.purpose,title:f.type,sub:f.note})).join('')
+      : `<div class="empty">${PIPELINE.includes(c.status)?'<b>No follow-up scheduled.</b> Leads go cold fast; schedule the next call.':'No calls scheduled. Book one for a renewal, rent or documents when needed.'}</div>`}</div></section>
+  ${member || c.docs.length ? `<section class="panel"><div class="panel-h">${hic('file','docs')}<h2>Documents</h2><span class="meta">${dn} of ${c.docs.length}</span></div>
+    <div class="panel-b" style="padding-top:12px;padding-bottom:8px">${c.docs.length?`<div class="prog" aria-hidden="true"><i data-k="docs-${c.id}" style="width:${dn/c.docs.length*100}%"></i></div>`:''}${docList(c)}
+      <div style="display:flex;gap:8px;margin:10px 0 4px"><input id="newDoc" aria-label="Document name" placeholder="Add another document"><button class="btn" data-act="addDoc" data-id="${c.id}">Add</button></div></div></section>` : ''}
+  ${CURRENT.includes(c.status) && Number(c.rent) ? `<section class="panel"><div class="panel-h">${hic('wallet','rent')}<h2>Rent</h2><span class="meta">${money(c.rent)} due on the ${ordinal(Number(c.rentDueDay||1))}</span></div>
+    <div class="panel-b"><div class="months">${last6(4).map(m=>`<div>${monthLabel(m)}${payButton(c,m)}</div>`).join('')}</div></div></section>` : ''}
+  <section class="panel"><div class="panel-h">${hic('clock','settings')}<h2>Activity</h2></div><div class="panel-b" style="padding-top:8px">
+    <div style="display:flex;gap:8px;margin-bottom:6px"><input id="newLog" aria-label="Note" placeholder="Add a note, e.g. visited, liked cabin 3"><button class="btn" data-act="addLog" data-id="${c.id}">Add</button></div>
+    ${[...c.log].reverse().slice(0,40).map(l=>`<div class="log">${esc(l.text)}<div class="w">${fmtDT(l.at)}</div></div>`).join('') || '<div class="empty">Nothing yet.</div>'}
+  </div></section>`;
+}
+
+// ===================== modals =====================
+function newClientModal(status='Lead'){
+  const c = {name:'', status, source:'Walk-in', plan:db.settings.plans[0]||'', seats:1};
+  openModal(`<h2>${PIPELINE.includes(status)?'New lead':'Add client'}</h2>
+    <div class="sub">A lead gets a first follow-up call. A client gets the document checklist instead.</div>
+    <form id="ncf" class="form" onsubmit="return false">${clientFields(c,true)}</form>
+    <div class="formfoot"><span class="sp"></span><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="createClient">Save</button></div>`);
+  applyVis($('#ncf'));
+}
+function createClient(){
+  const c = {id:uid(), docs:db.settings.docTemplate.map(n=>({name:n,collected:false,date:''})), payments:{}, log:[], createdAt:today()};
+  const r = readClientForm('ncf', c); if(!r) return;
+  c.status = r.status;
+  if(c.status === 'Active' && !c.startDate) c.startDate = today();
+  c.log.push({at:nowStr(), text:`Added as ${c.status}${c.source?` (found you via ${c.source})`:''}`});
+  db.clients.push(c);
+  if(r.first && PIPELINE.includes(c.status)) db.followups.push({id:uid(), clientId:c.id, purpose:SALES, type:'Call', due:r.first, note:'First follow-up', done:false});
+  save(); closeModal();
+  toast({title:`${c.name} added`, sub: PIPELINE.includes(c.status) ? (r.first?`First follow-up ${fmtDT(r.first)}`:'No follow-up scheduled') : `${c.docs.length} documents to collect`});
+  PIPELINE.includes(c.status) ? (route().name==='leads' ? render() : go('leads')) : go('client', c.id);
+}
+function saveClient(id){
+  const c = client(id), r = readClientForm('cf', c); if(!r) return;
+  const closed = setStatus(c, r.status);
+  ui.editing = null;
+  save(); render();
+  $('[data-act="editClient"]')?.focus({preventScroll:true});
+  toast({title:'Saved', sub: closed ? `${plural(closed,'open follow-up')} closed because ${c.name} is now ${c.status}.` : ''});
+}
+
+function fuModal(id, preset={}){
+  const f = id ? db.followups.find(x=>x.id===id) : {type:'Call', due:atHour(1,11), clientId:preset.client||'', note:''};
+  const pc = client(f.clientId);
+  const purpose = f.purpose || preset.purpose || (pc && MEMBER.includes(pc.status) ? 'Check-in' : SALES);
+  const opts = [['','Someone not saved yet'], ...db.clients.filter(c=>!['Left','Lost'].includes(c.status)||c.id===f.clientId).sort((a,b)=>a.name.localeCompare(b.name)).map(c=>[c.id, `${c.name}${c.company?' · '+c.company:''} (${c.status})`])];
+  openModal(`<h2>${id?'Edit call':'Schedule a call'}</h2><div class="sub">You'll get a reminder at this time.</div>
+    <form id="fuf" class="form" onsubmit="return false">
+      ${sel('With','clientId',f.clientId||'',opts,'','wide')}
+      <label data-who>Name<input name="who" value="${esc(f.who||'')}"></label><label data-who>Phone<input name="whoPhone" type="tel" value="${esc(f.whoPhone||'')}"></label>
+      ${sel('Purpose','purpose',purpose,PURPOSES)}
+      ${sel('How','type',f.type,FU_TYPES)}
+      <label class="wide">When<input name="due" type="datetime-local" value="${esc(f.due)}" required>
+        <span class="quick">${[['In 1 hour',0],['Tomorrow',1],['In 3 days',3],['Next week',7],['In 2 weeks',14]].map(([t,n])=>`<button type="button" class="btn sm" data-act="quickDue" data-form="fuf" data-field="due" data-days="${n}">${t}</button>`).join('')}</span></label>
+      <label class="wide">What to discuss<textarea name="note" rows="2">${esc(f.note||'')}</textarea></label>
+    </form>
+    <div class="formfoot">${id?`<button class="btn ghost danger" data-act="delFu" data-id="${id}">Delete</button>`:''}<span class="sp"></span><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveFu" data-id="${id||''}">Save</button></div>`);
+  const form = $('#fuf'), sync = () => { const has = !!form.elements.clientId.value; form.querySelectorAll('[data-who]').forEach(l=>l.hidden=has); };
+  form.elements.clientId.addEventListener('change', () => { sync(); if(!id){ const c = client(form.elements.clientId.value); form.elements.purpose.value = c && MEMBER.includes(c.status) ? 'Check-in' : SALES; } });
+  sync();
+}
+function saveFu(id){
+  if(!$('#fuf').reportValidity()) return;
+  const d = formData('fuf');
+  if(d.clientId){ d.who = ''; d.whoPhone = ''; }
+  if(id) Object.assign(db.followups.find(x=>x.id===id), d); else db.followups.push({id:uid(), done:false, ...d});
+  save(); closeModal(); refresh();
+  toast({title: id ? 'Call updated' : 'Call scheduled', sub: fmtDT(d.due)});
+}
+
+// Remarks: notes added to a call or task before it is done (e.g. "didn't pick up, try after 4").
+const remarkList = it => (it?.remarks||[]).length ? `<ul class="remlist">${[...it.remarks].reverse().map(x=>`<li>${esc(x.text)}<small>${fmtDT(x.at)}</small></li>`).join('')}</ul>` : '';
+function remarkModal(kind, id){
+  const it = findItem(kind, id); if(!it) return;
+  const c = kind==='fu' ? client(it.clientId) : null;
+  const who = c ? c.name : (it.who || it.title);
+  openModal(`<h2>Remarks</h2><div class="sub">${esc(who)} · ${esc(kind==='fu' ? `${it.purpose} · ${it.type}` : it.category)} · due ${fmtDT(it.due)}</div>
+    ${remarkList(it)}
+    <form class="form" onsubmit="return false"><label class="wide">New remark<textarea id="remText" rows="3" placeholder="e.g. Didn't pick up, try after 4 pm"></textarea></label></form>
+    <div class="formfoot"><span class="sp"></span><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveRemark" data-kind="${kind}" data-id="${id}">Save remark</button></div>`);
+  $('#remText').focus();
+}
+function completeModal(id, logOnlyClientId){
+  // id: complete an existing call. logOnlyClientId: record a call that wasn't scheduled.
+  const f = id ? db.followups.find(x=>x.id===id) : {type:'Call', purpose:null, clientId:logOnlyClientId};
+  const c = client(f.clientId);
+  const nextPurpose = f.purpose || (c && MEMBER.includes(c.status) ? 'Check-in' : SALES);
+  const lead = c && PIPELINE.includes(c.status);
+  openModal(`<h2>${id?'How did it go?':'Log a call'}</h2><div class="sub">${esc(c?c.name:(f.who||''))}${id?` · ${esc(f.purpose)} · ${esc(f.type)}`:''}</div>
+    ${id && f.remarks?.length ? `<div class="hint" style="margin-bottom:4px">Remarks so far</div>${remarkList(f)}` : ''}
+    <form id="cpf" class="form" onsubmit="return false">
+      ${!id?sel('How','type','Call',FU_TYPES):''}
+      <label class="wide">Outcome<textarea name="outcome" rows="3" placeholder="e.g. Liked the private cabin, wants a quote for 3 seats"></textarea></label>
+      ${c?sel('Status after this call','status',c.status,STATUSES,'','wide'):''}
+      <label>Next call<input name="next" type="datetime-local" value="${lead?atHour(2,11):''}"><span class="hint" data-nonext ${lead?'':'hidden'}>Leads go cold without a next step. Clear this only if you are done with them.</span><span class="quick">${[['2 days',2],['1 week',7],['1 month',30]].map(([t,n])=>`<button type="button" class="btn sm" data-act="quickDue" data-form="cpf" data-field="next" data-days="${n}">${t}</button>`).join('')}</span></label>
+      ${sel('Next call purpose','nextPurpose',nextPurpose,PURPOSES)}
+    </form>
+    <div class="formfoot"><span class="sp"></span><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveComplete" data-id="${id||''}" data-client="${f.clientId||''}">${id?'Mark done':'Save'}</button></div>`);
+  const form = $('#cpf');
+  form.elements.status?.addEventListener('change', e => {
+    const s = e.target.value;
+    form.elements.nextPurpose.value = PIPELINE.includes(s) ? SALES : s==='Active' ? (c.docs.some(d=>!d.collected)?'Document collection':'Check-in') : 'Check-in';
+    if(['Left','Lost'].includes(s)) form.elements.next.value = '';
+    else if(PIPELINE.includes(s) && !form.elements.next.value) form.elements.next.value = atHour(2,11);
+    form.querySelector('[data-nonext]').hidden = !PIPELINE.includes(s);
+  });
+}
+function saveComplete(id, clientId){
+  const d = formData('cpf'), snap = JSON.stringify(db);
+  let f;
+  if(id){ f = db.followups.find(x=>x.id===id); }
+  else { f = {id:uid(), clientId, purpose:'Check-in', type:d.type, due:nowStr(), note:'Unscheduled call'}; db.followups.push(f); }
+  const c = client(f.clientId);
+  if(c && PIPELINE.includes(c.status) && !id) f.purpose = SALES;
+  f.done = true; f.doneAt = nowStr(); f.outcome = d.outcome;
+  let closed = 0;
+  if(c){
+    c.log.push({at:nowStr(), text:`${f.type} (${f.purpose.toLowerCase()})${d.outcome?': '+d.outcome:''}`});
+    closed = setStatus(c, d.status);
+  }
+  if(d.next && !(c && ['Left','Lost'].includes(c.status)))
+    db.followups.push({id:uid(), clientId:f.clientId, who:f.who, whoPhone:f.whoPhone, purpose:d.nextPurpose, type:'Call', due:d.next, note:d.outcome?`Last time: ${d.outcome}`:'', done:false});
+  save(); closeModal();
+  leave('fu', f.id).then(refresh);
+  toast({title:'Call recorded', sub:[d.next?`Next call ${fmtDT(d.next)}`:'', closed?`${plural(closed,'other follow-up')} closed`:''].filter(Boolean).join(' · '), undo:snap});
+}
+
+function taskModal(id){
+  const t = id ? db.tasks.find(x=>x.id===id) : {title:'', category:'Post ad', due:atHour(1,10), repeatDays:7, note:''};
+  openModal(`<h2>${id?'Edit task':'Add a task'}</h2><div class="sub">Use repeating tasks for posting ads, sending invoices or monthly checks.</div>
+    <form id="tf" class="form" onsubmit="return false">
+      ${fld('What','title',t.title,'text','required placeholder="e.g. Post ad on 99acres and OLX"','','wide')}
+      ${sel('Category','category',t.category,TASK_CATS)}
+      ${sel('Repeats','repeatDays',String(t.repeatDays||0),[['0','Does not repeat'],['1','Every day'],['3','Every 3 days'],['7','Every week'],['14','Every 2 weeks'],['30','Every month'],['90','Every 3 months']])}
+      ${fld('Next due','due',t.due,'datetime-local','required','','wide')}
+      <label class="wide">Notes<textarea name="note" rows="2">${esc(t.note||'')}</textarea></label>
+    </form>
+    <div class="formfoot">${id?`<button class="btn ghost danger" data-act="delTask" data-id="${id}">Delete</button>`:''}<span class="sp"></span><button class="btn" data-act="closeModal">Cancel</button><button class="btn primary" data-act="saveTask" data-id="${id||''}">Save</button></div>`);
+}
+function saveTask(id){
+  if(!$('#tf').reportValidity()) return;
+  const d = formData('tf'); d.repeatDays = Number(d.repeatDays);
+  if(id) Object.assign(db.tasks.find(x=>x.id===id), d); else db.tasks.push({id:uid(), done:false, ...d});
+  save(); closeModal(); refresh();
+}
+function completeTask(id){
+  const t = db.tasks.find(x=>x.id===id); if(!t) return;
+  const snap = JSON.stringify(db);
+  if(t.category === 'Post ad') db.adLog.push({at:nowStr(), title:t.title});
+  if(t.repeatDays){ let d = new Date(t.due); do{ d = addDays(d, t.repeatDays); } while(d <= new Date()); t.due = toLocal(d); }
+  else { t.done = true; t.doneAt = nowStr(); }
+  save();
+  toast({title:'Done', sub: t.repeatDays ? `Next: ${fmtDT(t.due)}` : t.title, undo:snap});
+  leave('task', id).then(refresh);
+}
+
+// ===================== actions =====================
+const findItem = (kind,id) => (kind==='fu' ? db.followups : db.tasks).find(x=>x.id===id);
+const A = {
+  closeModal,
+  skip: () => $('#main').focus(),
+  seg: d => { ui[d.k] = d.v; render(); },
+  open: d => go('client', d.id),
+  newClient: d => newClientModal(d.status || 'Lead'),
+  createClient,
+  saveClient: d => saveClient(d.id),
+  editClient: d => { ui.editing = d.id; render(); $('#cf [name=name]')?.focus(); },
+  cancelEdit: () => { ui.editing = null; render(); $('[data-act="editClient"]')?.focus({preventScroll:true}); },
+  delClient: d => { const c = client(d.id); if(!confirm(`Delete ${c.name} and all their calls? To keep their history, set the status to Left or Lost instead.`)) return;
+    undoable(`${c.name} deleted`, '', () => { db.clients = db.clients.filter(x=>x.id!==d.id); db.followups = db.followups.filter(f=>f.clientId!==d.id); save(); });
+    go(PIPELINE.includes(c.status)?'leads':'clients'); },
+  newFu: d => fuModal(null, {client:d.client, purpose:d.purpose}),
+  saveFu: d => saveFu(d.id),
+  delFu: d => { undoable('Call deleted', '', () => { db.followups = db.followups.filter(f=>f.id!==d.id); save(); }); closeModal(); refresh(); },
+  logCall: d => completeModal(null, d.id),
+  newTask: () => taskModal(),
+  saveTask: d => saveTask(d.id),
+  delTask: d => { undoable('Task deleted', '', () => { db.tasks = db.tasks.filter(t=>t.id!==d.id); save(); }); closeModal(); refresh(); },
+  done: d => { if(!findItem(d.kind,d.id)) return; d.kind==='fu' ? completeModal(d.id) : completeTask(d.id); },
+  saveComplete: d => saveComplete(d.id, d.client),
+  edit: d => d.kind==='fu' ? fuModal(d.id) : taskModal(d.id),
+  snooze: d => { const it = findItem(d.kind,d.id); if(!it) return;
+    it.due = d.mins==='tomorrow' ? atHour(1,10) : toLocal(new Date(Date.now()+Number(d.mins)*6e4)); save(); refresh(); toast({title:'Snoozed', sub:`Until ${fmtDT(it.due)}`}); },
+  ics: d => { const r = reminders().find(x=>x.id===d.id); if(r) exportIcs(r); },
+  syncConnect: async () => {
+    const raw = $('#syncLink').value.trim(); let u;
+    try{ u = new URL(raw); }catch(e){}
+    const key = u?.searchParams.get('key');
+    if(!u || !/(^|\.)google\.com$/.test(u.hostname) || !key){
+      toast({title:'That is not a SpaceDesk link', sub:'It starts with https:\/\/script.google.com/macros/s/ and ends with ?key=…'}); $('#syncLink').focus(); return; }
+    sync.cfg = {url: u.origin + u.pathname, key}; saveSyncCfg();
+    toast({title:'Connecting to Google Sheets…'});
+    await runSync();
+    if(sync.state === 'ok') toast({title:'Connected', sub:'This computer now syncs with your Google Sheet.'});
+    else { toast({title:'Could not connect', sub: sync.err || 'Check the link and try again.', sticky:true}); sync.cfg = {}; saveSyncCfg(); setSyncState('off'); }
+    render();
+  },
+  syncNow: async () => { await runSync(); toast({title: sync.state === 'ok' ? 'Synced' : 'Sync problem', sub: sync.state === 'ok' ? '' : sync.err}); },
+  syncOff: () => { if(!confirm('Stop syncing this computer? Your data stays here and in the Google Sheet.')) return; sync.cfg = {}; saveSyncCfg(); setSyncState('off'); render(); },
+  copySyncLink: () => { const l = `${sync.cfg.url}?key=${sync.cfg.key}`; navigator.clipboard?.writeText(l).then(() => toast({title:'Phone link copied', sub:'Open it in Chrome on your phone, then ⋮ › Add to Home screen.'}), () => prompt('Copy this link:', l)); },
+  remark: d => remarkModal(d.kind, d.id),
+  saveRemark: d => {
+    const it = findItem(d.kind, d.id), text = $('#remText').value.trim();
+    if(!it) return;
+    if(!text){ $('#remText').focus(); return; }
+    (it.remarks ||= []).push({at:nowStr(), text});
+    const c = d.kind==='fu' ? client(it.clientId) : null;
+    if(c) c.log.push({at:nowStr(), text:`Remark on ${it.type.toLowerCase()}: ${text}`});
+    save(); closeModal(); refresh();
+    toast({title:'Remark saved', sub: c ? c.name : it.title});
+  },
+  rowMenu: (d, el) => openMenu(el, [
+    ['Add remark', `data-act="remark" data-kind="${d.kind}" data-id="${d.id}"`],
+    ['Snooze 1 hour', `data-act="snooze" data-kind="${d.kind}" data-id="${d.id}" data-mins="60"`],
+    ['Move to tomorrow', `data-act="snooze" data-kind="${d.kind}" data-id="${d.id}" data-mins="tomorrow"`],
+    ['Edit', `data-act="edit" data-kind="${d.kind}" data-id="${d.id}"`],
+    ['Add to calendar', `data-act="ics" data-kind="${d.kind}" data-id="${d.id}"`]]),
+  quickDue: d => { const x = Number(d.days), t = x ? atHour(x,11) : toLocal(new Date(Date.now()+36e5)); document.querySelector(`#${d.form} [name=${d.field}]`).value = t; },
+  wa: d => { const c = client(d.id); if(c?.phone) window.open(waLink(c.phone, fillTpl(d.tpl, c)), '_blank'); if(c){ c.log.push({at:nowStr(), text:`WhatsApp sent (${d.tpl==='lead'?'follow-up':d.tpl})`}); save(); } },
+  doc: (d, el) => { const doc = client(d.id).docs[d.i];
+    undoable(el.checked ? `${doc.name} collected` : `${doc.name} marked missing`, '', () => { doc.collected = el.checked; doc.date = el.checked ? today() : ''; save(); }); refresh();
+    document.querySelector(`[data-act="doc"][data-id="${d.id}"][data-i="${d.i}"]`)?.focus({preventScroll:true}); },
+  addDoc: d => { const v = $('#newDoc').value.trim(); if(!v) return; client(d.id).docs.push({name:v, collected:false, date:''}); save(); refresh(); },
+  pay: d => { const c = client(d.id), was = !!c.payments[d.m];
+    undoable(`${monthLabel(d.m,true)} ${was?'marked unpaid':'marked paid'}`, `${c.name} · ${money(c.rent)}`, () => {
+      if(was) delete c.payments[d.m]; else { c.payments[d.m] = today(); c.log.push({at:nowStr(), text:`Rent for ${monthLabel(d.m,true)} received`}); } save(); });
+    refresh();
+    const b = document.querySelector(`.pay[data-id="${d.id}"][data-m="${d.m}"]`); if(b){ b.classList.add('ack'); b.focus({preventScroll:true}); } },
+  refund: d => { const c = client(d.id); undoable('Deposit refunded', c.name, () => { c.depositRefunded = true; c.log.push({at:nowStr(), text:`Security deposit of ${money(c.deposit)} refunded`}); save(); }); refresh(); },
+  addLog: d => { const v = $('#newLog').value.trim(); if(!v) return; client(d.id).log.push({at:nowStr(), text:v}); save(); refresh(); },
+  perm: async () => {
+    // Hide the banner straight away: Edge may answer late, or never if its prompt is closed.
+    db.settings.notifAsked = today(); save(); render();
+    toast({title:'Allow notifications', sub:'Choose Allow in the prompt from Edge.'});
+    let r; try{ r = await Notification.requestPermission(); }catch(e){ r = Notification.permission; }
+    if(r === 'granted'){
+      toast({title:'Notifications are on', sub:'Call reminders will appear even when this window is behind others.'});
+      try{ new Notification('SpaceDesk', {body:'Notifications are on. Call reminders will appear like this.'}); }catch(e){}
+    } else {
+      toast({title: r === 'denied' ? 'Notifications are blocked' : 'Notifications were not turned on', sticky:true,
+        sub:'To allow them: in Edge open Settings, then Cookies and site permissions, then Notifications. You can also try again from SpaceDesk Settings.'});
+    }
+    render();
+  },
+  permLater: () => { db.settings.notifAsked = today(); save(); render(); },
+  testReminder: () => { beep(); toast({title:'Test reminder', sub:'Due reminders look like this, with Call, Done and Snooze buttons.'});
+    if('Notification' in window && Notification.permission==='granted') try{ new Notification('SpaceDesk test reminder', {body:'Desktop notifications are working.'}); }catch(e){} },
+  saveSettings: () => {
+    const d = formData('sf'), lines = s => s.split('\n').map(x=>x.trim()).filter(Boolean), s = db.settings;
+    Object.assign(s, {spaceName:d.spaceName.trim(), currency:d.currency, countryCode:d.countryCode.replace(/\D/g,''), totalSeats:Number(d.totalSeats||0), docTemplate:lines(d.docTemplate), plans:lines(d.plans), sound:!!d.sound});
+    Object.keys(DEFAULT_TPL).forEach(k => s.templates[k] = d['tpl_'+k] || DEFAULT_TPL[k]);
+    save(); render(); toast({title:'Settings saved'}); },
+  export: () => { db.settings.lastBackup = today(); save(); download(`spacedesk-backup-${today()}.json`, JSON.stringify(db,null,1), 'application/json'); render(); },
+  import: () => $('#importFile').click(),
+  csv: () => { const cols = ['name','company','phone','email','status','plan','seats','seatNo','source','startDate','endDate','rent','rentDueDay','deposit','lostReason','notes'];
+    const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    download(`spacedesk-clients-${today()}.csv`, '﻿'+[cols.join(','), ...db.clients.map(c=>cols.map(k=>q(c[k])).join(','))].join('\r\n'), 'text/csv'); },
+  reset: () => { if(prompt(syncOn() ? 'Type ERASE to delete SpaceDesk data on this device. Sync is turned off for this device first, so your Google Sheet copy is kept.' : 'Type ERASE to delete all SpaceDesk data in this browser.') !== 'ERASE') return;
+    if(syncOn() && !sync.cfg.hosted){ sync.cfg = {}; saveSyncCfg(); setSyncState('off'); }
+    else if(sync.cfg.hosted){ sync.cfg.base = null; saveSyncCfg(); }   // the phone just reloads the shared copy
+    db = fresh(); saveLocal(); go('today'); render(); }
+};
+
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-act]');
+  if(menuEl && !e.target.closest('.menu') && !(el && el.dataset.act === 'rowMenu')) closeMenu();
+  if(!el) return;
+  // let real links and nested controls inside clickable rows work normally
+  if(el.tagName === 'TR' && e.target.closest('a,button,input,label')) return;
+  if(el.type !== 'checkbox') e.preventDefault();
+  if(el.closest('.menu')) closeMenu();
+  A[el.dataset.act]?.(el.dataset, el, e);
+});
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){ if(menuEl) closeMenu(true); else closeModal(); }
+  if(menuEl && (e.key === 'ArrowDown' || e.key === 'ArrowUp')){
+    e.preventDefault();
+    const items = [...menuEl.querySelectorAll('button')], i = items.indexOf(document.activeElement);
+    items[(i + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length].focus();
+  }
+  if(e.key === 'Enter' && e.target.id === 'newDoc') A.addDoc({id:route().id});
+  if(e.key === 'Enter' && e.target.id === 'newLog') A.addLog({id:route().id});
+});
+document.addEventListener('input', e => {
+  if(e.target.id === 'q'){ ui.q = e.target.value; const p = e.target.selectionStart; render(); const q = $('#q'); q.focus(); q.setSelectionRange(p,p); }
+});
+document.addEventListener('change', e => {
+  if(e.target.name === 'status' && e.target.form && (e.target.form.id === 'cf' || e.target.form.id === 'ncf')) applyVis(e.target.form);
+});
+$('#importFile').addEventListener('change', e => {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = () => { try{ const d = JSON.parse(r.result); if(!Array.isArray(d.clients)) throw 0;
+      if(!confirm(`Replace everything with this backup (${plural(d.clients.length,'client')})?`)) return; db = migrate(d); save(); render(); toast({title:'Backup restored'}); }
+    catch(err){ alert('That file is not a SpaceDesk backup.'); } };
+  r.readAsText(file); e.target.value = '';
+});
+window.addEventListener('storage', e => { if(e.key === KEY){ db = load(); render(); } });
+
+// ===================== start =====================
+render(); checkDue(); setSyncState(syncOn() ? 'syncing' : 'off'); runSync();
+setInterval(() => {
+  checkDue();
+  // Keep Today's times fresh, but never pull the page out from under someone using it.
+  const busy = $('#modal') || menuEl || $('#main').contains(document.activeElement) && document.activeElement !== $('#main');
+  if(route().name === 'today' && !busy) render();
+}, 30000);
+</script>
+</body>
+</html>
